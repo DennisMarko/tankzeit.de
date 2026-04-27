@@ -461,6 +461,142 @@ p {
   overflow: hidden;
 }
 
+/* ========== Savings Calculator ========== */
+.savings-shell {
+  max-width: 980px;
+}
+
+.savings-teaser {
+  margin: 0 0 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.savings-teaser h2,
+.savings-empty h2,
+.savings-recommendation h2 {
+  margin: 0 0 6px;
+  font-size: clamp(1.15rem, 3vw, 1.7rem);
+}
+
+.savings-kicker {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.savings-form-card {
+  margin-bottom: 16px;
+}
+
+.savings-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr)) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.savings-form label,
+.savings-km-week legend {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.savings-km-week {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(68px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.savings-km-week legend {
+  grid-column: 1 / -1;
+  padding: 0 4px;
+}
+
+.savings-form input,
+.savings-form select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--panel-strong);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  padding: 9px 11px;
+}
+
+.savings-form input:focus,
+.savings-form select:focus {
+  outline: 2px solid rgba(20, 184, 166, 0.28);
+  border-color: rgba(15, 118, 110, 0.42);
+}
+
+.savings-results {
+  display: grid;
+  gap: 16px;
+}
+
+.savings-empty {
+  display: grid;
+  gap: 4px;
+}
+
+.savings-recommendation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+}
+
+.savings-money {
+  color: var(--accent);
+  font-size: clamp(1.7rem, 6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.savings-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.savings-metric {
+  display: grid;
+  gap: 8px;
+  min-height: 112px;
+}
+
+.savings-metric span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.savings-metric strong {
+  align-self: end;
+  color: var(--ink);
+  font-size: clamp(1.15rem, 3vw, 1.75rem);
+  line-height: 1.1;
+}
+
 /* ========== Tables ========== */
 .table {
   width: 100%;
@@ -669,6 +805,18 @@ p {
 
 .nav-item.active:hover {
   background: rgba(15, 118, 110, 0.15);
+}
+
+@media (max-width: 420px) {
+  .nav-bar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .nav-item {
+    min-width: 48px;
+    padding: 8px 6px;
+    font-size: 0.62rem;
+  }
 }
 
 /* Desktop nav adjustments */
@@ -1239,6 +1387,23 @@ canvas {
     gap: 10px;
   }
   .breakdown-step strong {
+    text-align: left;
+  }
+  .savings-teaser,
+  .savings-recommendation {
+    grid-template-columns: 1fr;
+  }
+  .savings-teaser .link-btn {
+    width: 100%;
+  }
+  .savings-form,
+  .savings-metrics {
+    grid-template-columns: 1fr;
+  }
+  .savings-km-week {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .savings-money {
     text-align: left;
   }
 }

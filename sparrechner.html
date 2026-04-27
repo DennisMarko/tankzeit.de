@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f766e" />
+    <meta name="apple-itunes-app" content="app-id=6759522835" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta
+      name="description"
+      content="Sparpotenzial beim Tanken aus Verbrauch, Fahrleistung, Tagespreisen und typischen Tankzeiten berechnen."
+    />
+    <meta name="robots" content="index,follow" />
+    <title>Tankzeit | Sparpotenzial Rechner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="styles.css?v=20260427-savings-v1" as="style" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=20260427-savings-v1" />
+  </head>
+  <body>
+    <main class="app savings-shell">
+      <header>
+        <div class="brand">
+          <h1>Sparpotenzial</h1>
+          <p>
+            Berechnet aus deinem Verbrauch, deiner Fahrleistung und den
+            historischen Tankzeit-Profilen nahegelegener Stationen.
+          </p>
+        </div>
+      </header>
+
+      <section class="card savings-form-card">
+        <form class="savings-form" id="savings-form">
+          <label>
+            Kraftstoff
+            <select id="fuel">
+              <option value="diesel">Diesel</option>
+              <option value="e10">E10</option>
+              <option value="e5">E5</option>
+            </select>
+          </label>
+          <label>
+            Verbrauch l/100 km
+            <input id="consumption" type="number" min="1" max="30" step="0.1" value="6.5" />
+          </label>
+          <fieldset class="savings-km-week">
+            <legend>Kilometer pro Tag</legend>
+            <label>
+              Mo
+              <input id="km-1" type="number" min="0" max="1000" step="5" value="40" />
+            </label>
+            <label>
+              Di
+              <input id="km-2" type="number" min="0" max="1000" step="5" value="40" />
+            </label>
+            <label>
+              Mi
+              <input id="km-3" type="number" min="0" max="1000" step="5" value="40" />
+            </label>
+            <label>
+              Do
+              <input id="km-4" type="number" min="0" max="1000" step="5" value="40" />
+            </label>
+            <label>
+              Fr
+              <input id="km-5" type="number" min="0" max="1000" step="5" value="40" />
+            </label>
+            <label>
+              Sa
+              <input id="km-6" type="number" min="0" max="1000" step="5" value="25" />
+            </label>
+            <label>
+              So
+              <input id="km-0" type="number" min="0" max="1000" step="5" value="25" />
+            </label>
+          </fieldset>
+          <label>
+            Tankvolumen
+            <input id="tank-volume" type="number" min="10" max="180" step="1" value="55" />
+          </label>
+          <label>
+            Aktuell im Tank
+            <input id="current-liters" type="number" min="0" max="180" step="1" value="25" />
+          </label>
+          <button class="btn primary" type="submit">Berechnen</button>
+          <button class="btn" id="location-request-btn" type="button">
+            Standort abrufen
+          </button>
+        </form>
+      </section>
+
+      <div id="status" class="status"></div>
+
+      <section class="savings-results" id="results" aria-live="polite">
+        <article class="card savings-empty">
+          <h2>Standortdaten fehlen noch</h2>
+          <p>Der Rechner startet, sobald nahe Tankstellen geladen sind.</p>
+        </article>
+      </section>
+    </main>
+
+    <nav class="nav-bar" aria-label="Hauptnavigation">
+      <a href="index.html" class="nav-item diesel">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22s8-4 8-10c0-4.42-3.58-8-8-8s-8 3.58-8 8c0 6 8 10 8 10z"
+          />
+        </svg>
+        <span>Diesel</span>
+      </a>
+      <a href="e10.html" class="nav-item e10">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22s8-4 8-10c0-4.42-3.58-8-8-8s-8 3.58-8 8c0 6 8 10 8 10z"
+          />
+        </svg>
+        <span>E10</span>
+      </a>
+      <a href="sparrechner.html" class="nav-item active" aria-current="page">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 19V5" />
+          <path d="M4 19h16" />
+          <path d="M7 15l3-3 3 2 5-7" />
+        </svg>
+        <span>Sparen</span>
+      </a>
+      <a href="favoriten.html" class="nav-item">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+          />
+        </svg>
+        <span>Favoriten</span>
+      </a>
+      <a href="management.html" class="nav-item">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="10" width="4" height="11" />
+          <rect x="10" y="5" width="4" height="16" />
+          <rect x="17" y="8" width="4" height="13" />
+        </svg>
+        <span>Statistik</span>
+      </a>
+      <a href="info.html" class="nav-item">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4M12 8h.01" />
+        </svg>
+        <span>Info</span>
+      </a>
+    </nav>
+
+    <script src="app-stats.js"></script>
+    <script src="station-catalog.js"></script>
+    <script>
+      const DATA_BASE = "data2/";
+      const SEARCH_RADIUS_KM = 10;
+      const MAX_STATIONS = 12;
+      const WEEKDAYS = [
+        "Sonntag",
+        "Montag",
+        "Dienstag",
+        "Mittwoch",
+        "Donnerstag",
+        "Freitag",
+        "Samstag",
+      ];
+      const statusEl = document.getElementById("status");
+      const resultsEl = document.getElementById("results");
+      const formEl = document.getElementById("savings-form");
+      const locationRequestBtn = document.getElementById("location-request-btn");
+      const fuelEl = document.getElementById("fuel");
+      const consumptionEl = document.getElementById("consumption");
+      const dayKmInputs = Array.from({ length: 7 }, (_, index) =>
+        document.getElementById(`km-${index}`),
+      );
+      const tankVolumeEl = document.getElementById("tank-volume");
+      const currentLitersEl = document.getElementById("current-liters");
+      let currentCenter = null;
+      let nearbyStations = [];
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function setStatus(message, type = "info") {
+        statusEl.textContent = message;
+        statusEl.className = `status ${type === "error" ? "error" : ""}`;
+        statusEl.style.display = "block";
+      }
+
+      function clearStatus() {
+        statusEl.style.display = "none";
+      }
+
+      function stationDataPath(stationId, fuel, fileName) {
+        return `${DATA_BASE}${stationId.split("-").join("/")}/${fuel}/${fileName}`;
+      }
+
+      function stationStatsPath(stationId, fuel) {
+        return `${DATA_BASE}${stationId.split("-").join("/")}/${fuel}.json`;
+      }
+
+      async function fetchText(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        return response.text();
+      }
+
+      async function fetchJson(url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        return response.json();
+      }
+
+      function parseHistory(csv) {
+        return csv
+          .trim()
+          .split(/\r?\n/)
+          .slice(1)
+          .map((line) => {
+            const [date, price] = line.split(",");
+            const parsedPrice = Number(price);
+            if (!date || !Number.isFinite(parsedPrice)) return null;
+            return {
+              date,
+              price: parsedPrice,
+              weekday: new Date(`${date}T12:00:00`).getDay(),
+            };
+          })
+          .filter(Boolean);
+      }
+
+      function average(values) {
+        if (!values.length) return null;
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      }
+
+      function weekdayAverages(history) {
+        const buckets = Array.from({ length: 7 }, () => []);
+        history.forEach((row) => buckets[row.weekday].push(row.price));
+        return buckets.map((values, index) => ({
+          weekday: index,
+          price: average(values),
+          samples: values.length,
+        }));
+      }
+
+      function recommendationWindow(stats) {
+        const cycleRows = TankzeitStats.cycleMarkdownSeries(stats, {
+          includeClosingNoon: false,
+        });
+        if (cycleRows.length) {
+          const bestMarkdown = Math.max(...cycleRows.map((row) => row.markdown));
+          const bestRow = cycleRows
+            .filter((row) => row.markdown === bestMarkdown)
+            .sort((left, right) => left.cycleHour - right.cycleHour)[0];
+          return {
+            markdown: bestMarkdown,
+            startHour: bestRow ? bestRow.clockHour : null,
+            text: TankzeitStats.relativeMinimumText(stats, "abends"),
+          };
+        }
+        const min = TankzeitStats.toNumber(stats && stats.min);
+        const bestHours = Array.isArray(stats && stats.besthours)
+          ? stats.besthours
+              .map((hour) => Number(hour))
+              .filter((hour) => Number.isFinite(hour))
+          : [];
+        return {
+          markdown: min === null ? 0 : Math.abs(min),
+          startHour: bestHours.length ? bestHours[0] : null,
+          text: TankzeitStats.relativeMinimumText(stats, "abends"),
+        };
+      }
+
+      function formatCurrency(value) {
+        return new Intl.NumberFormat("de-DE", {
+          style: "currency",
+          currency: "EUR",
+          maximumFractionDigits: 2,
+        }).format(value);
+      }
+
+      function formatPrice(value) {
+        return `${value.toFixed(3).replace(".", ",")} €/l`;
+      }
+
+      function formatDate(date) {
+        return new Intl.DateTimeFormat("de-DE", {
+          weekday: "long",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(date);
+      }
+
+      function dateKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+
+      function formatStationName(station) {
+        return station.brand
+          ? `${station.name} (${station.brand})`
+          : station.name;
+      }
+
+      function readInputs() {
+        const dailyKm = dayKmInputs.map((input) => Number(input.value));
+        return {
+          fuel: fuelEl.value,
+          consumption: Number(consumptionEl.value),
+          dailyKm,
+          weeklyKm: dailyKm.reduce(
+            (sum, value) => sum + (Number.isFinite(value) ? value : 0),
+            0,
+          ),
+          tankVolume: Number(tankVolumeEl.value),
+          currentLiters: Number(currentLitersEl.value),
+        };
+      }
+
+      function validateInputs(inputs) {
+        return (
+          Number.isFinite(inputs.consumption) &&
+          inputs.consumption > 0 &&
+          Number.isFinite(inputs.weeklyKm) &&
+          inputs.weeklyKm > 0 &&
+          inputs.dailyKm.every((value) => Number.isFinite(value) && value >= 0) &&
+          Number.isFinite(inputs.tankVolume) &&
+          inputs.tankVolume > 0 &&
+          Number.isFinite(inputs.currentLiters) &&
+          inputs.currentLiters >= 0 &&
+          inputs.currentLiters <= inputs.tankVolume
+        );
+      }
+
+      function startOfToday(date) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      }
+
+      async function stationProfile(station, inputs) {
+        const [stats, historyCsv] = await Promise.all([
+          fetchJson(stationStatsPath(station.id, inputs.fuel)),
+          fetchText(stationDataPath(station.id, inputs.fuel, "history.csv")),
+        ]);
+        const history = parseHistory(historyCsv);
+        const averageNoon = average(history.map((row) => row.price));
+        const windowInfo = recommendationWindow(stats);
+        const averages = weekdayAverages(history).filter((row) => row.price !== null);
+        if (!averages.length || averageNoon === null) return null;
+        return {
+          station,
+          averages,
+          averageNoon,
+          markdown: windowInfo.markdown,
+          startHour: windowInfo.startHour,
+          timeText: windowInfo.text,
+          profileText: TankzeitStats.profileText(stats, "Preisprofil"),
+        };
+      }
+
+      function candidateForDate(profile, date, inputs) {
+        const weekday = date.getDay();
+        const dayAverage = profile.averages.find((row) => row.weekday === weekday);
+        if (!dayAverage) return null;
+        const price = Math.max(0, dayAverage.price - profile.markdown);
+        const savingPerLiter = Math.max(0, profile.averageNoon - price);
+        return {
+          station: profile.station,
+          date: new Date(date),
+          dateKey: dateKey(date),
+          price,
+          savingPerLiter,
+          timeText: profile.timeText,
+          startHour: profile.startHour,
+        };
+      }
+
+      function consumptionForDate(date, inputs) {
+        return (inputs.dailyKm[date.getDay()] * inputs.consumption) / 100;
+      }
+
+      function nextDeadlineDate(startDate, litersAvailable, inputs) {
+        const date = startOfToday(startDate);
+        let fuel = litersAvailable;
+        for (let offset = 0; offset < 120; offset += 1) {
+          const need = consumptionForDate(date, inputs);
+          if (fuel < need) return new Date(date);
+          fuel -= need;
+          date.setDate(date.getDate() + 1);
+        }
+        return new Date(date);
+      }
+
+      function fuelUsedBetween(startDate, endDate, inputs) {
+        const cursor = startOfToday(startDate);
+        const endKey = dateKey(endDate);
+        let used = 0;
+        while (dateKey(cursor) < endKey) {
+          used += consumptionForDate(cursor, inputs);
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        return used;
+      }
+
+      function buildCandidates(profiles, fromDate, throughDate, inputs) {
+        const today = startOfToday(fromDate);
+        const end = startOfToday(throughDate);
+        const currentHour = fromDate.getHours() + fromDate.getMinutes() / 60;
+        const candidates = [];
+        for (const profile of profiles) {
+          const cursor = new Date(today);
+          while (cursor <= end) {
+            const candidate = candidateForDate(profile, cursor, inputs);
+            if (candidate) {
+              const isToday = dateKey(cursor) === dateKey(fromDate);
+              if (
+                !isToday ||
+                candidate.startHour === null ||
+                currentHour < candidate.startHour + 1
+              ) {
+                candidates.push(candidate);
+              }
+            }
+            cursor.setDate(cursor.getDate() + 1);
+          }
+        }
+        return candidates.sort((left, right) => {
+          if (left.price !== right.price) return left.price - right.price;
+          if (left.date - right.date !== 0) return left.date - right.date;
+          return left.station.dist - right.station.dist;
+        });
+      }
+
+      function buildTankPlan(profiles, inputs) {
+        const plan = [];
+        let availableFuel = inputs.currentLiters;
+        let cursorDate = new Date();
+        for (let stopIndex = 0; stopIndex < 4; stopIndex += 1) {
+          const deadline = nextDeadlineDate(cursorDate, availableFuel, inputs);
+          const candidates = buildCandidates(profiles, cursorDate, deadline, inputs);
+          if (!candidates.length) break;
+          const stop = candidates[0];
+          const fuelBeforeStop = Math.max(
+            0,
+            availableFuel - fuelUsedBetween(cursorDate, stop.date, inputs),
+          );
+          const litersToFill = Math.max(0, inputs.tankVolume - fuelBeforeStop);
+          plan.push({
+            ...stop,
+            litersToFill,
+            fuelBeforeStop,
+            cost: litersToFill * stop.price,
+            saving: litersToFill * stop.savingPerLiter,
+          });
+          availableFuel = inputs.tankVolume;
+          cursorDate = new Date(stop.date);
+          cursorDate.setDate(cursorDate.getDate() + 1);
+        }
+        return plan;
+      }
+
+      function renderResults(plan, inputs) {
+        if (!plan.length) {
+          resultsEl.innerHTML = `
+            <article class="card savings-empty">
+              <h2>Keine ausreichenden Daten</h2>
+              <p>Für deine Eingaben konnte kein Tankplan erstellt werden.</p>
+            </article>
+          `;
+          return;
+        }
+        const litersPerWeek = (inputs.weeklyKm * inputs.consumption) / 100;
+        const totalSaving = plan.reduce((sum, stop) => sum + stop.saving, 0);
+        const totalLiters = plan.reduce((sum, stop) => sum + stop.litersToFill, 0);
+        resultsEl.innerHTML = `
+          <section class="card savings-recommendation">
+            <div>
+              <p class="savings-kicker">Tankplanung ab jetzt</p>
+              <h2>Nächste 4 Tankstopps</h2>
+              <p>${totalLiters.toFixed(1).replace(".", ",")} l geplant · ${litersPerWeek.toFixed(1).replace(".", ",")} l Verbrauch pro Woche</p>
+            </div>
+            <div class="savings-money">${formatCurrency(totalSaving)}</div>
+          </section>
+          <section class="savings-metrics">
+            <article class="card savings-metric">
+              <span>geplante Ersparnis</span>
+              <strong>${formatCurrency(totalSaving)}</strong>
+            </article>
+            <article class="card savings-metric">
+              <span>Liter geplant</span>
+              <strong>${totalLiters.toFixed(1).replace(".", ",")} l</strong>
+            </article>
+            <article class="card savings-metric">
+              <span>nächster Stopp</span>
+              <strong>${formatDate(plan[0].date).split(",")[0]}</strong>
+            </article>
+            <article class="card savings-metric">
+              <span>Verbrauch pro Woche</span>
+              <strong>${litersPerWeek.toFixed(1).replace(".", ",")} l</strong>
+            </article>
+          </section>
+          <section class="card">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Station</th>
+                  <th>Datum</th>
+                  <th>Uhrzeit</th>
+                  <th>Liter</th>
+                  <th>Preis</th>
+                  <th>Ersparnis</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${plan
+                  .map(
+                    (item, index) => `
+                    <tr>
+                      <td data-label="Station">${index + 1}. ${escapeHtml(formatStationName(item.station))}</td>
+                      <td data-label="Datum">${escapeHtml(formatDate(item.date))}</td>
+                      <td data-label="Uhrzeit">${escapeHtml(item.timeText)}</td>
+                      <td data-label="Liter">${item.litersToFill.toFixed(1).replace(".", ",")} l</td>
+                      <td data-label="Preis">${formatPrice(item.price)}</td>
+                      <td data-label="Ersparnis">${formatCurrency(item.saving)}</td>
+                    </tr>
+                  `,
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+          </section>
+        `;
+      }
+
+      async function calculate() {
+        const inputs = readInputs();
+        if (!validateInputs(inputs)) {
+          setStatus("Bitte gültige Werte eintragen.", "error");
+          return;
+        }
+        if (!nearbyStations.length) {
+          setStatus("Standort wird benötigt, damit nahe Tankstellen berechnet werden können.");
+          requestLocation();
+          return;
+        }
+        setStatus("Tankplan wird berechnet...");
+        const settled = await Promise.allSettled(
+          nearbyStations.map((station) => stationProfile(station, inputs)),
+        );
+        const profiles = settled
+          .filter((result) => result.status === "fulfilled" && result.value)
+          .map((result) => result.value);
+        renderResults(buildTankPlan(profiles, inputs), inputs);
+        clearStatus();
+      }
+
+      async function loadNearbyStations(lat, lng) {
+        currentCenter = { lat, lng };
+        setStatus("Nahe Tankstellen werden geladen...");
+        const catalog = await TankzeitStationCatalog.loadCatalog();
+        nearbyStations = TankzeitStationCatalog.findNearbyStations(catalog, lat, lng, {
+          limit: MAX_STATIONS,
+          radiusKm: SEARCH_RADIUS_KM,
+        });
+        if (!nearbyStations.length) {
+          setStatus("Keine Tankstellen im Umkreis gefunden.", "error");
+          return;
+        }
+        await calculate();
+      }
+
+      function setLocationButtonBusy(isBusy) {
+        locationRequestBtn.disabled = isBusy;
+        locationRequestBtn.textContent = isBusy
+          ? "Standort wird geladen..."
+          : "Standort abrufen";
+      }
+
+      function requestLocation() {
+        if (!navigator.geolocation) {
+          setStatus("Standort ist in diesem Browser nicht verfügbar.", "error");
+          return;
+        }
+        setLocationButtonBusy(true);
+        setStatus("Standort wird ermittelt...");
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            setLocationButtonBusy(false);
+            try {
+              await loadNearbyStations(
+                position.coords.latitude,
+                position.coords.longitude,
+              );
+            } catch (err) {
+              console.warn("Savings calculation failed", err);
+              setStatus("Daten konnten nicht geladen werden.", "error");
+            }
+          },
+          (err) => {
+            console.warn("Geolocation failed", err);
+            setLocationButtonBusy(false);
+            setStatus("Standort konnte nicht ermittelt werden.", "error");
+          },
+          { enableHighAccuracy: false, maximumAge: 300000, timeout: 20000 },
+        );
+      }
+
+      formEl.addEventListener("submit", (event) => {
+        event.preventDefault();
+        calculate();
+      });
+      [fuelEl, consumptionEl, tankVolumeEl, currentLitersEl, ...dayKmInputs].forEach((element) => {
+        element.addEventListener("change", calculate);
+      });
+      locationRequestBtn.addEventListener("click", requestLocation);
+      requestLocation();
+    </script>
+  </body>
+</html>
