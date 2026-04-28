@@ -132,6 +132,52 @@
         </div>
       </section>
 
+      <section class="card management-chart-card chain-price-card">
+        <div class="toolbar">
+          <div class="left">
+            <h2 id="chain-comparison-title">
+              Freie vs. Ketten · 12:00-Referenz
+            </h2>
+            <p class="control-hint" id="chain-comparison-subtitle">
+              Preisvergleich für den ausgewählten Datenstand.
+            </p>
+          </div>
+          <a class="link-btn secondary-link" href="kettenvergleich.html">
+            Mehr Details
+          </a>
+        </div>
+        <div class="chain-comparison-metrics" id="chain-comparison-metrics">
+          <article class="savings-metric chain-comparison-metric">
+            <span>Günstigere Gruppe</span>
+            <strong>-</strong>
+          </article>
+          <article class="savings-metric chain-comparison-metric">
+            <span>Median-Differenz</span>
+            <strong>-</strong>
+          </article>
+          <article class="savings-metric chain-comparison-metric">
+            <span>Verglichene Stationen</span>
+            <strong>-</strong>
+          </article>
+        </div>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Gruppe</th>
+              <th>Stationen</th>
+              <th>Median</th>
+              <th>Durchschnitt</th>
+              <th>Preisspanne</th>
+            </tr>
+          </thead>
+          <tbody id="chain-comparison-table">
+            <tr>
+              <td colspan="5">Wird geladen...</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <section class="card management-chart-card">
         <div class="toolbar">
           <div class="left">
@@ -180,6 +226,13 @@
 
       <section class="card management-footer">
         <div class="footer-notes">
+          <p class="footer-note">
+            <strong>Freie vs. Ketten:</strong> Vergleicht für den gewählten
+            Kraftstoff die 12:00-Referenzpreise großer Ketten mit freien bzw.
+            privaten Tankstellen. Der Median zeigt den typischen Preis der
+            Gruppe, der Durchschnitt den Mittelwert aller verfügbaren
+            Stationen.
+          </p>
           <p class="footer-note">
             <strong>Preisverlauf Montag bis Sonntag:</strong> Zeigt den
             Median des 12:00-Referenzpreises für den Gesamtmarkt in der Woche
@@ -286,9 +339,33 @@
       const weeklyTitleEl = document.getElementById("weekly-title");
       const weeklyCanvas = document.getElementById("weekly-plot");
       const weeklyCtx = weeklyCanvas.getContext("2d");
+      const chainComparisonTitleEl = document.getElementById(
+        "chain-comparison-title",
+      );
+      const chainComparisonSubtitleEl = document.getElementById(
+        "chain-comparison-subtitle",
+      );
+      const chainComparisonMetricsEl = document.getElementById(
+        "chain-comparison-metrics",
+      );
+      const chainComparisonTableEl = document.getElementById(
+        "chain-comparison-table",
+      );
       const datePicker = document.getElementById("date-picker");
       const prevBtn = document.getElementById("prev-day");
       const nextBtn = document.getElementById("next-day");
+      const CHAIN_BRANDS = new Set([
+        "ARAL",
+        "SHELL",
+        "ESSO",
+        "TOTALENERGIES",
+        "JET",
+        "STAR",
+        "HEM",
+        "ORLEN",
+        "OIL!",
+        "Q1",
+      ]);
       const FUEL_COLORS = {
         diesel: "#0f766e",
         e10: "#ea580c",
@@ -346,9 +423,11 @@
         histogramLayout: null,
         weeklyRows: [],
         weeklyLayout: null,
+        chainComparison: null,
         date: null,
         nav: { prev: false, next: false },
       };
+      let stationCatalogPromise = null;
 
       function setStatus(message, type = "info") {
         statusEl.textContent = message;
@@ -721,6 +800,212 @@
         return (
           sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight
         );
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function normalizeBrand(value) {
+        const brand = String(value || "").trim();
+        if (!brand) return "Ohne Markenangabe";
+        const upper = brand.toUpperCase();
+        if (upper === "SHELL") return "Shell";
+        if (upper === "TOTALENERGIES" || upper === "TOTAL") return "TotalEnergies";
+        if (upper === "ESSO") return "ESSO";
+        if (upper === "ARAL") return "ARAL";
+        if (upper === "STAR") return "STAR";
+        if (upper === "JET") return "JET";
+        if (upper === "HEM") return "HEM";
+        if (upper === "ORLEN") return "ORLEN";
+        if (upper === "OIL!") return "OIL!";
+        if (upper === "Q1") return "Q1";
+        return brand;
+      }
+
+      function isChainBrand(value) {
+        const normalized = normalizeBrand(value).toUpperCase();
+        if (CHAIN_BRANDS.has(normalized)) return true;
+        return [...CHAIN_BRANDS].some((brand) =>
+          normalized.startsWith(`${brand} `),
+        );
+      }
+
+      async function loadStationCatalogMap() {
+        if (!stationCatalogPromise) {
+          stationCatalogPromise = fetch("data/stations.json", {
+            cache: "no-store",
+          })
+            .then((response) => {
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              return response.json();
+            })
+            .then(
+              (stations) =>
+                new Map(
+                  stations.map((station) => [
+                    String(station.uuid || "").trim(),
+                    station,
+                  ]),
+                ),
+            );
+        }
+        return stationCatalogPromise;
+      }
+
+      function priceDistribution(values) {
+        const sortedValues = values
+          .filter((value) => Number.isFinite(value))
+          .sort((left, right) => left - right);
+        if (!sortedValues.length) {
+          return {
+            count: 0,
+            min: null,
+            q1: null,
+            median: null,
+            avg: null,
+            q3: null,
+            max: null,
+          };
+        }
+        return {
+          count: sortedValues.length,
+          min: sortedValues[0],
+          q1: quantile(sortedValues, 0.25),
+          median: quantile(sortedValues, 0.5),
+          avg: average(sortedValues),
+          q3: quantile(sortedValues, 0.75),
+          max: sortedValues[sortedValues.length - 1],
+        };
+      }
+
+      function formatPrice(value) {
+        if (!Number.isFinite(value)) return "-";
+        return `${new Intl.NumberFormat("de-DE", {
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3,
+        }).format(value)} €/l`;
+      }
+
+      function formatCentDifference(value) {
+        if (!Number.isFinite(value)) return "-";
+        const cents = value * 100;
+        if (Math.abs(cents) < 0.05) return "0,0 ct/l";
+        return `${new Intl.NumberFormat("de-DE", {
+          minimumFractionDigits: 1,
+          maximumFractionDigits: 1,
+        }).format(Math.abs(cents))} ct/l`;
+      }
+
+      function renderComparisonMetric(label, value) {
+        return `
+          <article class="savings-metric chain-comparison-metric">
+            <span>${escapeHtml(label)}</span>
+            <strong>${escapeHtml(value)}</strong>
+          </article>
+        `;
+      }
+
+      function renderChainComparisonEmpty(message) {
+        chainComparisonMetricsEl.innerHTML = [
+          renderComparisonMetric("Günstigere Gruppe", "-"),
+          renderComparisonMetric("Median-Differenz", "-"),
+          renderComparisonMetric("Verglichene Stationen", "-"),
+        ].join("");
+        chainComparisonTableEl.innerHTML = `
+          <tr>
+            <td colspan="5">${escapeHtml(message)}</td>
+          </tr>
+        `;
+      }
+
+      function drawChainComparison() {
+        const comparison = state.chainComparison;
+        chainComparisonTitleEl.textContent = `Freie vs. Ketten · 12:00-Referenz · ${fuelDisplayName(state.fuel)}`;
+        chainComparisonSubtitleEl.textContent = state.date
+          ? `Ausgewählter Datenstand: ${formatISODate(state.date)} · Uhrzeit: 12:00`
+          : "Preisvergleich für den ausgewählten Datenstand.";
+
+        if (!comparison) {
+          renderChainComparisonEmpty("Wird geladen...");
+          return;
+        }
+
+        const { chain, free } = comparison;
+        if (!chain.count || !free.count) {
+          renderChainComparisonEmpty(
+            "Für diesen Datenstand gibt es nicht genug Preise für beide Gruppen.",
+          );
+          return;
+        }
+
+        const medianDifference = chain.median - free.median;
+        const cheaperGroup =
+          Math.abs(medianDifference) < 0.0005
+            ? "gleichauf"
+            : medianDifference > 0
+              ? "Freie"
+              : "Ketten";
+        const totalCount = chain.count + free.count;
+        chainComparisonMetricsEl.innerHTML = [
+          renderComparisonMetric("Günstigere Gruppe", cheaperGroup),
+          renderComparisonMetric(
+            "Median-Differenz",
+            formatCentDifference(medianDifference),
+          ),
+          renderComparisonMetric("Verglichene Stationen", formatCount(totalCount)),
+        ].join("");
+
+        const rows = [
+          { label: "Ketten", stats: chain },
+          { label: "Freie / private", stats: free },
+        ];
+        chainComparisonTableEl.innerHTML = rows
+          .map(
+            ({ label, stats }) => `
+              <tr>
+                <td data-label="Gruppe">${escapeHtml(label)}</td>
+                <td data-label="Stationen">${formatCount(stats.count)}</td>
+                <td data-label="Median">${formatPrice(stats.median)}</td>
+                <td data-label="Durchschnitt">${formatPrice(stats.avg)}</td>
+                <td data-label="Preisspanne">${formatPrice(stats.min)} - ${formatPrice(stats.max)}</td>
+              </tr>
+            `,
+          )
+          .join("");
+      }
+
+      async function loadChainComparison(d) {
+        state.chainComparison = null;
+        drawChainComparison();
+        const [stationsById, noonRows] = await Promise.all([
+          loadStationCatalogMap(),
+          fetchCsv(urlForNoonDate(d)),
+        ]);
+        const values = {
+          chain: [],
+          free: [],
+        };
+        noonRows.forEach((row) => {
+          const stationId = String(row.station_uuid || "").trim();
+          if (!stationId) return;
+          const price = csvFuelNumber(row, state.fuel);
+          if (!Number.isFinite(price)) return;
+          const station = stationsById.get(stationId);
+          const brandValue = station?.brand || station?.name || "";
+          const bucket = isChainBrand(brandValue) ? "chain" : "free";
+          values[bucket].push(price);
+        });
+        state.chainComparison = {
+          chain: priceDistribution(values.chain),
+          free: priceDistribution(values.free),
+        };
+        drawChainComparison();
       }
 
       function buildNoonDeltaSummary(currentRows, previousRows) {
@@ -1644,6 +1929,15 @@
           drawBrandChart();
           drawHistogramChart();
           drawWeeklyChart();
+          if (state.date) {
+            loadChainComparison(state.date).catch((comparisonError) => {
+              console.warn("Chain comparison failed", comparisonError);
+              state.chainComparison = null;
+              renderChainComparisonEmpty(
+                "Preisvergleich konnte nicht geladen werden.",
+              );
+            });
+          }
         });
       });
 
@@ -1713,6 +2007,13 @@
             state.weeklyRows = [];
             drawWeeklyChart();
           });
+          loadChainComparison(d).catch((comparisonError) => {
+            console.warn("Chain comparison failed", comparisonError);
+            state.chainComparison = null;
+            renderChainComparisonEmpty(
+              "Preisvergleich konnte nicht geladen werden.",
+            );
+          });
         } catch (e) {
           setStatus("Management-Daten konnten nicht geladen werden.", "error");
           state.summary = null;
@@ -1721,6 +2022,7 @@
           state.histogramLayout = null;
           state.weeklyRows = [];
           state.weeklyLayout = null;
+          state.chainComparison = null;
           weeklyCtx.clearRect(0, 0, weeklyCanvas.width, weeklyCanvas.height);
           brandCtx.clearRect(0, 0, brandCanvas.width, brandCanvas.height);
           histogramCtx.clearRect(
@@ -1728,6 +2030,9 @@
             0,
             histogramCanvas.width,
             histogramCanvas.height,
+          );
+          renderChainComparisonEmpty(
+            "Preisvergleich konnte nicht geladen werden.",
           );
         }
         await updateNav();

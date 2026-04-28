@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f766e" />
+    <meta
+      name="description"
+      content="Vergleich freier Tankstellen und großer Tankstellenketten in Deutschland."
+    />
+    <meta name="robots" content="noindex,follow" />
+    <title>Tankzeit | Freie Tankstellen und Ketten</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="styles.css?v=20260428-chain-v2" as="style" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=20260428-chain-v2" />
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <div class="brand">
+          <h1>Freie vs. Ketten</h1>
+          <p>
+            Vergleich großer Tankstellenketten mit freien und privaten
+            Betreibern anhand der 12:00-Referenzpreise.
+          </p>
+        </div>
+      </header>
+
+      <div id="status" class="status"></div>
+
+      <section class="card management-controls">
+        <div class="toolbar">
+          <div class="left">
+            <h2>Datum & Kraftstoff</h2>
+            <p class="control-hint" id="data-note"></p>
+          </div>
+          <div class="control-grid">
+            <div class="control-group">
+              <div class="control-label">Datum</div>
+              <div class="date-nav" aria-label="Datum wechseln">
+                <button
+                  class="btn"
+                  id="prev-day"
+                  type="button"
+                  title="Vorheriger Tag"
+                  aria-label="Vorheriger Tag"
+                >
+                  ←
+                </button>
+                <input id="date-picker" type="date" />
+                <button
+                  class="btn"
+                  id="next-day"
+                  type="button"
+                  title="Nächster Tag"
+                  aria-label="Nächster Tag"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+            <div class="control-group">
+              <div class="control-label">Kraftstoff</div>
+              <div class="fuel-tabs" role="tablist" aria-label="Kraftstoff">
+                <button
+                  class="btn primary"
+                  data-fuel="diesel"
+                  role="tab"
+                  aria-selected="true"
+                >
+                  Diesel
+                </button>
+                <button
+                  class="btn"
+                  data-fuel="e10"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  E10
+                </button>
+                <button
+                  class="btn"
+                  data-fuel="e5"
+                  role="tab"
+                  aria-selected="false"
+                >
+                  E5
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="savings-metrics" id="summary">
+        <article class="card savings-metric">
+          <span>Tankstellen gesamt</span>
+          <strong>-</strong>
+        </article>
+        <article class="card savings-metric">
+          <span>Ketten</span>
+          <strong>-</strong>
+        </article>
+        <article class="card savings-metric">
+          <span>Freie / private</span>
+          <strong>-</strong>
+        </article>
+        <article class="card savings-metric">
+          <span>Ketten-Anteil</span>
+          <strong>-</strong>
+        </article>
+      </section>
+
+      <section class="card chain-definition">
+        <h2>Einordnung</h2>
+        <p>
+          Als Ketten werden hier große, bundesweit bekannte Marken gezählt.
+          Alle anderen Marken, fehlende Markenangaben und lokale Betreiber
+          landen zunächst in der Gruppe freie/private Tankstellen.
+        </p>
+        <div class="chain-tags" id="chain-tags"></div>
+      </section>
+
+      <section class="card management-chart-card">
+        <div class="toolbar">
+          <div class="left">
+            <h2 id="weekly-title">Preisverlauf Montag bis Sonntag</h2>
+            <p class="control-hint">
+              Median der 12:00-Referenzpreise je Gruppe in der aktuellen Woche,
+              fehlende Folgetage als gestrichelte Prognose.
+            </p>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="weekly-plot"></canvas>
+        </div>
+      </section>
+
+      <section class="card management-chart-card">
+        <div class="toolbar">
+          <div class="left">
+            <h2 id="reference-title">12:00-Referenzpreis nach Gruppe</h2>
+            <p class="control-hint">
+              Preisverteilung von Ketten und freien Tankstellen am gewählten Tag.
+            </p>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="reference-plot"></canvas>
+        </div>
+      </section>
+
+      <section class="card management-chart-card">
+        <div class="toolbar">
+          <div class="left">
+            <h2 id="delta-title">Preisänderung zu 12:00</h2>
+            <p class="control-hint">
+              Veränderung des 12:00-Medians gegenüber dem Vortag je Gruppe,
+              fehlende Folgetage als gestrichelte Prognose.
+            </p>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="delta-plot"></canvas>
+        </div>
+      </section>
+
+      <section class="card management-chart-card">
+        <div class="toolbar">
+          <div class="left">
+            <h2 id="histogram-title">Zeitpunkt der 12:00-Referenz</h2>
+            <p class="control-hint">
+              Wann der verwendete Referenzpreis laut Datenstand feststand.
+            </p>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="histogram-plot"></canvas>
+        </div>
+      </section>
+
+      <section class="chain-grid">
+        <article class="card">
+          <div class="toolbar">
+            <div class="left">
+              <h2>Ketten</h2>
+              <p>Häufigste Marken aus der Ketten-Gruppe.</p>
+            </div>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Marke</th>
+                <th>Stationen</th>
+                <th>Anteil</th>
+              </tr>
+            </thead>
+            <tbody id="chain-table">
+              <tr><td colspan="3">Wird geladen...</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="card">
+          <div class="toolbar">
+            <div class="left">
+              <h2>Freie / private</h2>
+              <p>Häufigste freie Marken und Betreiberbezeichnungen.</p>
+            </div>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Marke / Betreiber</th>
+                <th>Stationen</th>
+                <th>Anteil</th>
+              </tr>
+            </thead>
+            <tbody id="free-table">
+              <tr><td colspan="3">Wird geladen...</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </section>
+    </main>
+
+    <nav class="nav-bar" aria-label="Hauptnavigation">
+      <a href="index.html" class="nav-item diesel">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22s8-4 8-10c0-4.42-3.58-8-8-8s-8 3.58-8 8c0 6 8 10 8 10z"
+          />
+        </svg>
+        <span>Diesel</span>
+      </a>
+      <a href="e10.html" class="nav-item e10">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 22s8-4 8-10c0-4.42-3.58-8-8-8s-8 3.58-8 8c0 6 8 10 8 10z"
+          />
+        </svg>
+        <span>E10</span>
+      </a>
+      <a href="sparrechner.html" class="nav-item">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 19V5" />
+          <path d="M4 19h16" />
+          <path d="M7 15l3-3 3 2 5-7" />
+        </svg>
+        <span>Sparen</span>
+      </a>
+      <a href="favoriten.html" class="nav-item">
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+          />
+        </svg>
+        <span>Favoriten</span>
+      </a>
+      <a href="management.html" class="nav-item active" aria-current="page">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="10" width="4" height="11" />
+          <rect x="10" y="5" width="4" height="16" />
+          <rect x="17" y="8" width="4" height="13" />
+        </svg>
+        <span>Statistik</span>
+      </a>
+      <a href="info.html" class="nav-item">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4M12 8h.01" />
+        </svg>
+        <span>Info</span>
+      </a>
+    </nav>
+
+    <script>
+      const MIN_DATE_STR = "2026-04-01";
+      const APP_TIME_ZONE = "Europe/Berlin";
+      const CHAIN_BRANDS = new Set([
+        "ARAL",
+        "SHELL",
+        "ESSO",
+        "TOTALENERGIES",
+        "JET",
+        "STAR",
+        "HEM",
+        "ORLEN",
+        "OIL!",
+        "Q1",
+      ]);
+      const GROUPS = [
+        { key: "chain", label: "Ketten", color: "#0f766e" },
+        { key: "free", label: "Freie / private", color: "#ea580c" },
+      ];
+      const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+
+      const statusEl = document.getElementById("status");
+      const dataNoteEl = document.getElementById("data-note");
+      const summaryEl = document.getElementById("summary");
+      const chainTableEl = document.getElementById("chain-table");
+      const freeTableEl = document.getElementById("free-table");
+      const chainTagsEl = document.getElementById("chain-tags");
+      const datePicker = document.getElementById("date-picker");
+      const prevBtn = document.getElementById("prev-day");
+      const nextBtn = document.getElementById("next-day");
+      const weeklyTitleEl = document.getElementById("weekly-title");
+      const referenceTitleEl = document.getElementById("reference-title");
+      const deltaTitleEl = document.getElementById("delta-title");
+      const histogramTitleEl = document.getElementById("histogram-title");
+      const weeklyCanvas = document.getElementById("weekly-plot");
+      const referenceCanvas = document.getElementById("reference-plot");
+      const deltaCanvas = document.getElementById("delta-plot");
+      const histogramCanvas = document.getElementById("histogram-plot");
+      const weeklyCtx = weeklyCanvas.getContext("2d");
+      const referenceCtx = referenceCanvas.getContext("2d");
+      const deltaCtx = deltaCanvas.getContext("2d");
+      const histogramCtx = histogramCanvas.getContext("2d");
+
+      const state = {
+        date: null,
+        fuel: "diesel",
+        stations: [],
+        stationsById: new Map(),
+        noonCache: new Map(),
+        latestDate: null,
+        weeklyRows: [],
+        selectedStats: null,
+        deltaRows: [],
+        histogramRows: [],
+      };
+
+      function setStatus(message, type = "info") {
+        statusEl.textContent = message;
+        statusEl.className = `status ${type === "error" ? "error" : ""}`;
+        statusEl.style.display = "block";
+      }
+
+      function clearStatus() {
+        statusEl.style.display = "none";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function normalizeBrand(value) {
+        const brand = String(value || "").trim();
+        if (!brand) return "Ohne Markenangabe";
+        const upper = brand.toUpperCase();
+        if (upper === "SHELL") return "Shell";
+        if (upper === "TOTALENERGIES" || upper === "TOTAL") return "TotalEnergies";
+        if (upper === "ESSO") return "ESSO";
+        if (upper === "ARAL") return "ARAL";
+        if (upper === "STAR") return "STAR";
+        if (upper === "JET") return "JET";
+        if (upper === "HEM") return "HEM";
+        if (upper === "ORLEN") return "ORLEN";
+        if (upper === "OIL!") return "OIL!";
+        if (upper === "Q1") return "Q1";
+        return brand;
+      }
+
+      function isChainBrand(brand) {
+        const normalized = normalizeBrand(brand).toUpperCase();
+        if (CHAIN_BRANDS.has(normalized)) return true;
+        return [...CHAIN_BRANDS].some((chain) =>
+          normalized.startsWith(`${chain} `),
+        );
+      }
+
+      function stationGroup(station) {
+        return isChainBrand(station?.brand || station?.name) ? "chain" : "free";
+      }
+
+      function parseISODate(value) {
+        const [y, m, d] = value.split("-").map((part) => parseInt(part, 10));
+        return new Date(Date.UTC(y, m - 1, d));
+      }
+
+      function formatISODate(date) {
+        return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+      }
+
+      function addDays(date, delta) {
+        const copy = new Date(date.getTime());
+        copy.setUTCDate(copy.getUTCDate() + delta);
+        return copy;
+      }
+
+      function berlinToday() {
+        const formatter = new Intl.DateTimeFormat("en-CA", {
+          timeZone: APP_TIME_ZONE,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+        return parseISODate(formatter.format(new Date()));
+      }
+
+      function startOfWeekMonday(date) {
+        const weekday = date.getUTCDay();
+        const offset = weekday === 0 ? -6 : 1 - weekday;
+        return addDays(date, offset);
+      }
+
+      function dateParts(date) {
+        return {
+          y: String(date.getUTCFullYear()),
+          m: String(date.getUTCMonth() + 1).padStart(2, "0"),
+          d: String(date.getUTCDate()).padStart(2, "0"),
+        };
+      }
+
+      function noonUrl(date) {
+        const p = dateParts(date);
+        return `data2/${p.y}/${p.m}/${p.d}/noon.csv`;
+      }
+
+      async function exists(url) {
+        try {
+          const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+          return response.ok;
+        } catch {
+          return false;
+        }
+      }
+
+      async function latestAvailableDate(maxDate, minDate) {
+        let candidate = maxDate;
+        while (candidate >= minDate) {
+          if (await exists(noonUrl(candidate))) return candidate;
+          candidate = addDays(candidate, -1);
+        }
+        return minDate;
+      }
+
+      function parseCsv(text) {
+        const lines = text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        if (!lines.length) return [];
+        const headers = lines[0].split(",").map((header) => header.trim());
+        return lines.slice(1).map((line) => {
+          const values = line.split(",");
+          const row = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] ?? "";
+          });
+          return row;
+        });
+      }
+
+      async function loadNoonRows(date) {
+        const key = formatISODate(date);
+        if (!state.noonCache.has(key)) {
+          state.noonCache.set(
+            key,
+            fetch(noonUrl(date), { cache: "no-store" }).then((response) => {
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              return response.text();
+            }).then(parseCsv),
+          );
+        }
+        return state.noonCache.get(key);
+      }
+
+      function csvFuelNumber(row, fuel) {
+        const raw = String(row?.[fuel] ?? "").trim();
+        if (!raw) return null;
+        const numeric = Number(raw);
+        return Number.isFinite(numeric) ? numeric : null;
+      }
+
+      function quantile(sortedValues, p) {
+        if (!sortedValues.length) return null;
+        if (sortedValues.length === 1) return sortedValues[0];
+        const index = (sortedValues.length - 1) * p;
+        const lower = Math.floor(index);
+        const upper = Math.ceil(index);
+        if (lower === upper) return sortedValues[lower];
+        const weight = index - lower;
+        return sortedValues[lower] * (1 - weight) + sortedValues[upper] * weight;
+      }
+
+      function average(values) {
+        const finiteValues = values.filter((value) => Number.isFinite(value));
+        if (!finiteValues.length) return null;
+        return finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length;
+      }
+
+      function distribution(values) {
+        const sorted = values
+          .filter((value) => Number.isFinite(value))
+          .sort((left, right) => left - right);
+        if (!sorted.length) {
+          return { count: 0, min: null, q1: null, median: null, avg: null, q3: null, max: null };
+        }
+        return {
+          count: sorted.length,
+          min: sorted[0],
+          q1: quantile(sorted, 0.25),
+          median: quantile(sorted, 0.5),
+          avg: average(sorted),
+          q3: quantile(sorted, 0.75),
+          max: sorted[sorted.length - 1],
+        };
+      }
+
+      function groupedPriceStats(rows, fuel) {
+        const values = { chain: [], free: [] };
+        rows.forEach((row) => {
+          const station = state.stationsById.get(String(row.station_uuid || "").trim());
+          if (!station) return;
+          const price = csvFuelNumber(row, fuel);
+          if (!Number.isFinite(price)) return;
+          values[stationGroup(station)].push(price);
+        });
+        return {
+          chain: distribution(values.chain),
+          free: distribution(values.free),
+        };
+      }
+
+      function groupedReferenceBuckets(rows, fuel) {
+        const bucketMinutes = 15;
+        const groups = {
+          chain: new Map(),
+          free: new Map(),
+        };
+        rows.forEach((row) => {
+          const station = state.stationsById.get(String(row.station_uuid || "").trim());
+          if (!station || !Number.isFinite(csvFuelNumber(row, fuel))) return;
+          const timeText = String(row[`${fuel}_last_update`] || row.last_update || "");
+          const match = timeText.match(/T(\d{2}):(\d{2})/);
+          if (!match) return;
+          const totalMinutes = Number(match[1]) * 60 + Number(match[2]);
+          const bucket = Math.floor(totalMinutes / bucketMinutes) * bucketMinutes;
+          const target = groups[stationGroup(station)];
+          target.set(bucket, (target.get(bucket) || 0) + 1);
+        });
+        return Array.from({ length: Math.floor((24 * 60) / bucketMinutes) }, (_value, index) => {
+          const bucketMinute = index * bucketMinutes;
+          return {
+            bucketMinute,
+            chain: groups.chain.get(bucketMinute) || 0,
+            free: groups.free.get(bucketMinute) || 0,
+          };
+        });
+      }
+
+      function countByBrand(stations, group) {
+        const counts = new Map();
+        stations.forEach((station) => {
+          const brand = normalizeBrand(station.brand || station.name);
+          const isChain = stationGroup(station) === "chain";
+          if ((group === "chain") !== isChain) return;
+          counts.set(brand, (counts.get(brand) || 0) + 1);
+        });
+        return [...counts.entries()]
+          .map(([brand, count]) => ({ brand, count }))
+          .sort((left, right) => {
+            if (right.count !== left.count) return right.count - left.count;
+            return left.brand.localeCompare(right.brand, "de", { sensitivity: "base" });
+          });
+      }
+
+      function formatNumber(value) {
+        return new Intl.NumberFormat("de-DE").format(value);
+      }
+
+      function formatPrice(value) {
+        if (!Number.isFinite(value)) return "-";
+        return new Intl.NumberFormat("de-DE", {
+          minimumFractionDigits: 3,
+          maximumFractionDigits: 3,
+        }).format(value);
+      }
+
+      function formatPercent(count, total) {
+        if (!total) return "-";
+        return `${((count / total) * 100).toFixed(1).replace(".", ",")} %`;
+      }
+
+      function formatFuel(fuel) {
+        return ({ diesel: "Diesel", e10: "E10", e5: "E5" }[fuel] || fuel.toUpperCase());
+      }
+
+      function formatTime(totalMinutes) {
+        const hour = Math.floor(totalMinutes / 60);
+        const minute = totalMinutes % 60;
+        return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+      }
+
+      function renderOverview() {
+        const chainRows = countByBrand(state.stations, "chain");
+        const freeRows = countByBrand(state.stations, "free");
+        const chainCount = chainRows.reduce((sum, row) => sum + row.count, 0);
+        const freeCount = freeRows.reduce((sum, row) => sum + row.count, 0);
+        const total = state.stations.length;
+        summaryEl.innerHTML = `
+          <article class="card savings-metric">
+            <span>Tankstellen gesamt</span>
+            <strong>${formatNumber(total)}</strong>
+          </article>
+          <article class="card savings-metric">
+            <span>Ketten</span>
+            <strong>${formatNumber(chainCount)}</strong>
+          </article>
+          <article class="card savings-metric">
+            <span>Freie / private</span>
+            <strong>${formatNumber(freeCount)}</strong>
+          </article>
+          <article class="card savings-metric">
+            <span>Ketten-Anteil</span>
+            <strong>${formatPercent(chainCount, total)}</strong>
+          </article>
+        `;
+        renderRows(chainTableEl, chainRows, total);
+        renderRows(freeTableEl, freeRows, total);
+        chainTagsEl.innerHTML = [...CHAIN_BRANDS]
+          .sort((left, right) => left.localeCompare(right, "de"))
+          .map((brand) => `<span>${escapeHtml(brand)}</span>`)
+          .join("");
+      }
+
+      function renderRows(target, rows, total) {
+        target.innerHTML = rows
+          .slice(0, 20)
+          .map(
+            (row) => `
+              <tr>
+                <td data-label="Marke">${escapeHtml(row.brand)}</td>
+                <td data-label="Stationen">${formatNumber(row.count)}</td>
+                <td data-label="Anteil">${formatPercent(row.count, total)}</td>
+              </tr>
+            `,
+          )
+          .join("");
+      }
+
+      function resizeCanvas(canvas, ctx) {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+        canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function chartTheme() {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? {
+              grid: "rgba(148, 163, 184, 0.18)",
+              text: "rgba(237, 244, 243, 0.78)",
+              title: "rgba(237, 244, 243, 0.9)",
+            }
+          : {
+              grid: "rgba(0, 0, 0, 0.08)",
+              text: "rgba(0, 0, 0, 0.62)",
+              title: "rgba(0, 0, 0, 0.76)",
+            };
+      }
+
+      function computeDomain(values, includeZero = false) {
+        const finite = values.filter((value) => Number.isFinite(value));
+        if (!finite.length) return { min: 0, max: 1 };
+        let min = Math.min(...finite);
+        let max = Math.max(...finite);
+        if (includeZero) {
+          min = Math.min(min, 0);
+          max = Math.max(max, 0);
+        }
+        if (Math.abs(max - min) < 0.0005) {
+          const pad = Math.max(0.01, Math.abs(max || 1) * 0.04);
+          return { min: min - pad, max: max + pad };
+        }
+        const pad = (max - min) * 0.14;
+        return { min: min - pad, max: max + pad };
+      }
+
+      function yScale(domain, plot, value) {
+        return plot.top + ((domain.max - value) / (domain.max - domain.min)) * plot.height;
+      }
+
+      function xScale(domain, plot, value) {
+        return plot.left + ((value - domain.min) / (domain.max - domain.min)) * plot.width;
+      }
+
+      function drawLegend(ctx, plot) {
+        let x = plot.left;
+        GROUPS.forEach((group) => {
+          ctx.fillStyle = group.color;
+          ctx.fillRect(x, plot.top - 18, 10, 10);
+          ctx.fillStyle = chartTheme().text;
+          ctx.fillText(group.label, x + 16, plot.top - 9);
+          x += group.key === "chain" ? 86 : 126;
+        });
+        ctx.save();
+        ctx.strokeStyle = chartTheme().text;
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+        ctx.moveTo(x, plot.top - 13);
+        ctx.lineTo(x + 24, plot.top - 13);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = chartTheme().text;
+        ctx.fillText("Prognose", x + 32, plot.top - 9);
+        ctx.restore();
+      }
+
+      function forecastLineRows(rows, valueGetter, assignValue) {
+        const projected = rows.map((row) => ({
+          ...row,
+          chain: row.chain && typeof row.chain === "object" ? { ...row.chain } : row.chain,
+          free: row.free && typeof row.free === "object" ? { ...row.free } : row.free,
+          forecast: {},
+        }));
+
+        GROUPS.forEach((group) => {
+          const actualIndexes = projected
+            .map((row, index) =>
+              Number.isFinite(valueGetter(row, group.key)) ? index : null,
+            )
+            .filter((index) => index !== null);
+          if (!actualIndexes.length) return;
+
+          const lastActualIndex = Math.max(...actualIndexes);
+          const deltas = [];
+          for (let index = 1; index < actualIndexes.length; index += 1) {
+            const previousIndex = actualIndexes[index - 1];
+            const currentIndex = actualIndexes[index];
+            const dayGap = currentIndex - previousIndex;
+            if (dayGap > 0) {
+              deltas.push(
+                (valueGetter(projected[currentIndex], group.key) -
+                  valueGetter(projected[previousIndex], group.key)) /
+                  dayGap,
+              );
+            }
+          }
+          const dailyTrend = deltas.length ? average(deltas) : 0;
+          let previousValue = valueGetter(projected[lastActualIndex], group.key);
+          for (
+            let index = lastActualIndex + 1;
+            index < projected.length;
+            index += 1
+          ) {
+            previousValue += dailyTrend;
+            assignValue(projected[index], group.key, previousValue);
+            projected[index].forecast[group.key] = true;
+          }
+        });
+
+        return projected;
+      }
+
+      function drawLineChart(canvas, ctx, rows, titleEl, title, valueGetter, includeZero = false) {
+        titleEl.textContent = `${title} · ${formatFuel(state.fuel)}`;
+        resizeCanvas(canvas, ctx);
+        const w = canvas.getBoundingClientRect().width;
+        const h = canvas.getBoundingClientRect().height;
+        const theme = chartTheme();
+        const plot = { left: 58, right: 18, top: 42, bottom: 48 };
+        plot.width = w - plot.left - plot.right;
+        plot.height = h - plot.top - plot.bottom;
+        ctx.clearRect(0, 0, w, h);
+        ctx.font = "12px Manrope, sans-serif";
+
+        const values = rows.flatMap((row) => GROUPS.map((group) => valueGetter(row, group.key)));
+        const domain = computeDomain(values, includeZero);
+        const tickCount = 5;
+        ctx.strokeStyle = theme.grid;
+        ctx.fillStyle = theme.text;
+        for (let i = 0; i < tickCount; i += 1) {
+          const value = domain.min + (i * (domain.max - domain.min)) / (tickCount - 1);
+          const y = yScale(domain, plot, value);
+          ctx.beginPath();
+          ctx.moveTo(plot.left, y);
+          ctx.lineTo(plot.left + plot.width, y);
+          ctx.stroke();
+          ctx.fillText(formatPrice(value), 8, y + 4);
+        }
+        drawLegend(ctx, plot);
+
+        GROUPS.forEach((group) => {
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = group.color;
+          for (let index = 1; index < rows.length; index += 1) {
+            const previousValue = valueGetter(rows[index - 1], group.key);
+            const currentValue = valueGetter(rows[index], group.key);
+            if (!Number.isFinite(previousValue) || !Number.isFinite(currentValue)) {
+              continue;
+            }
+            const previousX =
+              plot.left + ((index - 1) / Math.max(1, rows.length - 1)) * plot.width;
+            const currentX =
+              plot.left + (index / Math.max(1, rows.length - 1)) * plot.width;
+            const previousY = yScale(domain, plot, previousValue);
+            const currentY = yScale(domain, plot, currentValue);
+            ctx.save();
+            if (rows[index].forecast?.[group.key] || rows[index - 1].forecast?.[group.key]) {
+              ctx.setLineDash([7, 5]);
+            }
+            ctx.beginPath();
+            ctx.moveTo(previousX, previousY);
+            ctx.lineTo(currentX, currentY);
+            ctx.stroke();
+            ctx.restore();
+          }
+          rows.forEach((row, index) => {
+            const value = valueGetter(row, group.key);
+            if (!Number.isFinite(value)) return;
+            const x = plot.left + (index / Math.max(1, rows.length - 1)) * plot.width;
+            const y = yScale(domain, plot, value);
+            ctx.beginPath();
+            ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+            if (row.forecast?.[group.key]) {
+              ctx.fillStyle = chartTheme().text;
+              ctx.strokeStyle = group.color;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = group.color;
+              ctx.fill();
+            }
+          });
+        });
+
+        ctx.fillStyle = theme.text;
+        rows.forEach((row, index) => {
+          const x = plot.left + (index / Math.max(1, rows.length - 1)) * plot.width;
+          ctx.fillText(row.label, x - 8, plot.top + plot.height + 26);
+        });
+      }
+
+      function drawReferenceChart() {
+        referenceTitleEl.textContent = `12:00-Referenzpreis nach Gruppe · ${formatFuel(state.fuel)}`;
+        resizeCanvas(referenceCanvas, referenceCtx);
+        const w = referenceCanvas.getBoundingClientRect().width;
+        const h = referenceCanvas.getBoundingClientRect().height;
+        const ctx = referenceCtx;
+        const theme = chartTheme();
+        const plot = { left: 118, right: 18, top: 32, bottom: 44 };
+        plot.width = w - plot.left - plot.right;
+        plot.height = h - plot.top - plot.bottom;
+        ctx.clearRect(0, 0, w, h);
+        ctx.font = "12px Manrope, sans-serif";
+        const rows = GROUPS.map((group) => ({ ...group, stats: state.selectedStats?.[group.key] }));
+        const values = rows.flatMap((row) => [row.stats?.min, row.stats?.q1, row.stats?.median, row.stats?.q3, row.stats?.max]);
+        const domain = computeDomain(values);
+        ctx.strokeStyle = theme.grid;
+        ctx.fillStyle = theme.text;
+        for (let i = 0; i < 4; i += 1) {
+          const value = domain.min + (i * (domain.max - domain.min)) / 3;
+          const x = xScale(domain, plot, value);
+          ctx.beginPath();
+          ctx.moveTo(x, plot.top);
+          ctx.lineTo(x, plot.top + plot.height);
+          ctx.stroke();
+          ctx.fillText(formatPrice(value), x - 12, plot.top + plot.height + 26);
+        }
+        rows.forEach((row, index) => {
+          if (!row.stats?.count) return;
+          const y = plot.top + (index + 0.5) * (plot.height / rows.length);
+          const minX = xScale(domain, plot, row.stats.min);
+          const q1X = xScale(domain, plot, row.stats.q1);
+          const medianX = xScale(domain, plot, row.stats.median);
+          const q3X = xScale(domain, plot, row.stats.q3);
+          const maxX = xScale(domain, plot, row.stats.max);
+          ctx.fillStyle = theme.title;
+          ctx.fillText(row.label, 14, y + 4);
+          ctx.strokeStyle = row.color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(minX, y);
+          ctx.lineTo(maxX, y);
+          ctx.stroke();
+          ctx.fillStyle = `${row.color}33`;
+          ctx.fillRect(q1X, y - 14, Math.max(1, q3X - q1X), 28);
+          ctx.strokeRect(q1X, y - 14, Math.max(1, q3X - q1X), 28);
+          ctx.beginPath();
+          ctx.moveTo(medianX, y - 18);
+          ctx.lineTo(medianX, y + 18);
+          ctx.stroke();
+          ctx.fillStyle = theme.text;
+          ctx.fillText(`n=${formatNumber(row.stats.count)}`, 14, y + 22);
+        });
+      }
+
+      function drawHistogramChart() {
+        histogramTitleEl.textContent = `Zeitpunkt der 12:00-Referenz · ${formatFuel(state.fuel)}`;
+        resizeCanvas(histogramCanvas, histogramCtx);
+        const w = histogramCanvas.getBoundingClientRect().width;
+        const h = histogramCanvas.getBoundingClientRect().height;
+        const ctx = histogramCtx;
+        const theme = chartTheme();
+        const plot = { left: 58, right: 18, top: 42, bottom: 48 };
+        plot.width = w - plot.left - plot.right;
+        plot.height = h - plot.top - plot.bottom;
+        ctx.clearRect(0, 0, w, h);
+        ctx.font = "12px Manrope, sans-serif";
+        const maxCount = Math.max(
+          1,
+          ...state.histogramRows.flatMap((row) => [row.chain, row.free]),
+        );
+        const domain = { min: 0, max: maxCount };
+        ctx.strokeStyle = theme.grid;
+        ctx.fillStyle = theme.text;
+        for (let i = 0; i < 5; i += 1) {
+          const value = (i * maxCount) / 4;
+          const y = yScale(domain, plot, value);
+          ctx.beginPath();
+          ctx.moveTo(plot.left, y);
+          ctx.lineTo(plot.left + plot.width, y);
+          ctx.stroke();
+          ctx.fillText(formatNumber(Math.round(value)), 8, y + 4);
+        }
+        drawLegend(ctx, plot);
+        const slot = plot.width / state.histogramRows.length;
+        const barWidth = Math.max(1, slot / 2 - 1);
+        state.histogramRows.forEach((row, index) => {
+          GROUPS.forEach((group, groupIndex) => {
+            const value = row[group.key];
+            if (!value) return;
+            const x = plot.left + index * slot + groupIndex * barWidth;
+            const y = yScale(domain, plot, value);
+            ctx.fillStyle = group.color;
+            ctx.fillRect(x, y, barWidth, plot.top + plot.height - y);
+          });
+        });
+        ctx.fillStyle = theme.text;
+        state.histogramRows.forEach((row, index) => {
+          if (index % 12 !== 0) return;
+          const x = plot.left + index * slot;
+          ctx.fillText(formatTime(row.bucketMinute), x - 10, plot.top + plot.height + 26);
+        });
+      }
+
+      function drawAllCharts() {
+        const weeklyRows = forecastLineRows(
+          state.weeklyRows,
+          (row, key) => row[key]?.median,
+          (row, key, value) => {
+            row[key] = {
+              ...(row[key] && typeof row[key] === "object" ? row[key] : {}),
+              median: value,
+            };
+          },
+        );
+        const deltaRows = forecastLineRows(
+          state.deltaRows,
+          (row, key) => row[key],
+          (row, key, value) => {
+            row[key] = value;
+          },
+        );
+
+        drawLineChart(
+          weeklyCanvas,
+          weeklyCtx,
+          weeklyRows,
+          weeklyTitleEl,
+          "Preisverlauf Montag bis Sonntag",
+          (row, key) => row[key]?.median,
+        );
+        drawReferenceChart();
+        drawLineChart(
+          deltaCanvas,
+          deltaCtx,
+          deltaRows,
+          deltaTitleEl,
+          "Preisänderung zu 12:00",
+          (row, key) => row[key],
+          true,
+        );
+        drawHistogramChart();
+      }
+
+      async function buildWeeklyRows(baseDate) {
+        const weekStart = startOfWeekMonday(baseDate);
+        const dates = Array.from({ length: 7 }, (_value, index) => addDays(weekStart, index));
+        return Promise.all(
+          dates.map(async (date, index) => {
+            try {
+              const rows = await loadNoonRows(date);
+              return {
+                date,
+                label: WEEKDAYS[index],
+                ...groupedPriceStats(rows, state.fuel),
+              };
+            } catch {
+              return { date, label: WEEKDAYS[index], chain: {}, free: {} };
+            }
+          }),
+        );
+      }
+
+      async function buildDeltaRows(baseDate) {
+        const weekStart = startOfWeekMonday(baseDate);
+        const dates = Array.from({ length: 7 }, (_value, index) => addDays(weekStart, index));
+        return Promise.all(
+          dates.map(async (date, index) => {
+            try {
+              const [currentRows, previousRows] = await Promise.all([
+                loadNoonRows(date),
+                loadNoonRows(addDays(date, -1)),
+              ]);
+              const current = groupedPriceStats(currentRows, state.fuel);
+              const previous = groupedPriceStats(previousRows, state.fuel);
+              return {
+                date,
+                label: WEEKDAYS[index],
+                chain:
+                  Number.isFinite(current.chain.median) &&
+                  Number.isFinite(previous.chain.median)
+                    ? current.chain.median - previous.chain.median
+                    : null,
+                free:
+                  Number.isFinite(current.free.median) &&
+                  Number.isFinite(previous.free.median)
+                    ? current.free.median - previous.free.median
+                    : null,
+              };
+            } catch {
+              return { date, label: WEEKDAYS[index], chain: null, free: null };
+            }
+          }),
+        );
+      }
+
+      async function loadForDate(date) {
+        state.date = date;
+        datePicker.value = formatISODate(date);
+        setStatus("Vergleichsdaten werden geladen...");
+        try {
+          const rows = await loadNoonRows(date);
+          const [weeklyRows, deltaRows] = await Promise.all([
+            buildWeeklyRows(date),
+            buildDeltaRows(date),
+          ]);
+          state.selectedStats = groupedPriceStats(rows, state.fuel);
+          state.histogramRows = groupedReferenceBuckets(rows, state.fuel);
+          state.weeklyRows = weeklyRows;
+          state.deltaRows = deltaRows;
+          drawAllCharts();
+          clearStatus();
+        } catch (err) {
+          console.warn("Chain detail failed", err);
+          setStatus("Vergleichsdaten konnten nicht geladen werden.", "error");
+        }
+        updateNav();
+      }
+
+      function updateNav() {
+        const minDate = parseISODate(MIN_DATE_STR);
+        const prevDate = addDays(state.date, -1);
+        const nextDate = addDays(state.date, 1);
+        prevBtn.style.display = prevDate >= minDate ? "" : "none";
+        nextBtn.style.display = nextDate <= state.latestDate ? "" : "none";
+      }
+
+      async function init() {
+        setStatus("Stationsübersicht wird geladen...");
+        const response = await fetch("data/stations.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.stations = await response.json();
+        state.stationsById = new Map(
+          state.stations.map((station) => [String(station.uuid || "").trim(), station]),
+        );
+        renderOverview();
+
+        const minDate = parseISODate(MIN_DATE_STR);
+        const maxDate = addDays(berlinToday(), -1);
+        state.latestDate = await latestAvailableDate(maxDate, minDate);
+        datePicker.min = MIN_DATE_STR;
+        datePicker.max = formatISODate(state.latestDate);
+        dataNoteEl.textContent = `Datenstand: ${formatISODate(state.latestDate)} (neuester lokal verfügbarer Datensatz)`;
+        await loadForDate(state.latestDate);
+      }
+
+      document.querySelectorAll("[data-fuel]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.fuel = button.getAttribute("data-fuel");
+          document.querySelectorAll("[data-fuel]").forEach((other) => {
+            other.classList.remove("primary");
+            other.setAttribute("aria-selected", "false");
+          });
+          button.classList.add("primary");
+          button.setAttribute("aria-selected", "true");
+          loadForDate(state.date);
+        });
+      });
+
+      prevBtn.addEventListener("click", () => loadForDate(addDays(state.date, -1)));
+      nextBtn.addEventListener("click", () => loadForDate(addDays(state.date, 1)));
+      datePicker.addEventListener("change", () => {
+        if (!datePicker.value) return;
+        let target = parseISODate(datePicker.value);
+        if (target > state.latestDate) target = state.latestDate;
+        loadForDate(target);
+      });
+
+      window.addEventListener("resize", () => {
+        if (state.weeklyRows.length) drawAllCharts();
+      });
+
+      init().catch((err) => {
+        console.warn("Chain comparison init failed", err);
+        setStatus("Stationsübersicht konnte nicht geladen werden.", "error");
+      });
+    </script>
+  </body>
+</html>
