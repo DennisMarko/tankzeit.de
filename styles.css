@@ -809,13 +809,18 @@ p {
 
 @media (max-width: 420px) {
   .nav-bar {
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: 4px;
+    padding-right: 4px;
+    gap: 2px;
   }
   .nav-item {
-    min-width: 48px;
-    padding: 8px 6px;
-    font-size: 0.62rem;
+    min-width: 42px;
+    padding: 8px 4px;
+    font-size: 0.56rem;
+  }
+  .nav-item svg {
+    width: 20px;
+    height: 20px;
   }
 }
 
@@ -918,6 +923,13 @@ canvas {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.control-hint {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
 }
 
 .fuel-tabs {

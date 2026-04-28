@@ -72,6 +72,7 @@
         <div class="toolbar">
           <div class="left">
             <h2>Datum & Kraftstoff</h2>
+            <p class="control-hint" id="data-availability-note"></p>
           </div>
           <div class="control-grid">
             <div class="control-group">
@@ -134,6 +135,17 @@
       <section class="card management-chart-card">
         <div class="toolbar">
           <div class="left">
+            <h2 id="weekly-title">Preisverlauf Montag bis Sonntag</h2>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="weekly-plot"></canvas>
+        </div>
+      </section>
+
+      <section class="card management-chart-card">
+        <div class="toolbar">
+          <div class="left">
             <h2 id="brand-title">12:00-Referenzpreis nach Marke</h2>
           </div>
         </div>
@@ -168,6 +180,12 @@
 
       <section class="card management-footer">
         <div class="footer-notes">
+          <p class="footer-note">
+            <strong>Preisverlauf Montag bis Sonntag:</strong> Zeigt den
+            Median des 12:00-Referenzpreises für den Gesamtmarkt in der Woche
+            des ausgewählten Datums. Fehlt für einzelne Tage noch ein Datensatz,
+            wird der Rest der Woche als gestrichelte Prognose fortgeführt.
+          </p>
           <p class="footer-note">
             <strong>12:00-Referenzpreis nach Marke:</strong> Zeigt je Marke den
             ausgewählten Referenzpreis. Für jeden Kraftstoff gilt: Eine positive
@@ -253,6 +271,9 @@
       const MIN_DATE_STR = "2026-02-04";
 
       const statusEl = document.getElementById("status");
+      const dataAvailabilityNoteEl = document.getElementById(
+        "data-availability-note",
+      );
       const titleEl = document.getElementById("title");
       const canvas = document.getElementById("plot");
       const ctx = canvas.getContext("2d");
@@ -262,6 +283,9 @@
       const histogramTitleEl = document.getElementById("histogram-title");
       const histogramCanvas = document.getElementById("histogram-plot");
       const histogramCtx = histogramCanvas.getContext("2d");
+      const weeklyTitleEl = document.getElementById("weekly-title");
+      const weeklyCanvas = document.getElementById("weekly-plot");
+      const weeklyCtx = weeklyCanvas.getContext("2d");
       const datePicker = document.getElementById("date-picker");
       const prevBtn = document.getElementById("prev-day");
       const nextBtn = document.getElementById("next-day");
@@ -320,6 +344,8 @@
         layout: null,
         brandLayout: null,
         histogramLayout: null,
+        weeklyRows: [],
+        weeklyLayout: null,
         date: null,
         nav: { prev: false, next: false },
       };
@@ -526,6 +552,15 @@
           minimumFractionDigits: 1,
           maximumFractionDigits: 1,
         }).format(numeric * 100);
+      }
+
+      function average(values) {
+        const finiteValues = values.filter((value) => Number.isFinite(value));
+        if (!finiteValues.length) return null;
+        return (
+          finiteValues.reduce((sum, value) => sum + value, 0) /
+          finiteValues.length
+        );
       }
 
       function formatTimeOfDay(totalMinutes) {
@@ -998,6 +1033,234 @@
         });
       }
 
+      function startOfWeekMonday(date) {
+        const day = date.getUTCDay();
+        const offset = day === 0 ? -6 : 1 - day;
+        return addDays(date, offset);
+      }
+
+      function weekdayShortLabel(date) {
+        return new Intl.DateTimeFormat("de-DE", {
+          weekday: "short",
+          timeZone: "UTC",
+        }).format(date);
+      }
+
+      function displayDateLabel(date) {
+        return new Intl.DateTimeFormat("de-DE", {
+          day: "2-digit",
+          month: "2-digit",
+          timeZone: "UTC",
+        }).format(date);
+      }
+
+      function forecastWeeklyRows(rows) {
+        const projected = rows.map((row) => ({
+          ...row,
+          displayPrice: row.price,
+          forecast: false,
+        }));
+        const actualIndexes = projected
+          .map((row, index) => (Number.isFinite(row.price) ? index : null))
+          .filter((index) => index !== null);
+        if (!actualIndexes.length) return projected;
+
+        const lastActualIndex = Math.max(...actualIndexes);
+        const actualPrices = actualIndexes.map((index) => projected[index].price);
+        const deltas = [];
+        for (let index = 1; index < actualIndexes.length; index += 1) {
+          const dayGap = actualIndexes[index] - actualIndexes[index - 1];
+          if (dayGap > 0) {
+            deltas.push((actualPrices[index] - actualPrices[index - 1]) / dayGap);
+          }
+        }
+        const dailyTrend = deltas.length ? average(deltas) : 0;
+        let previousPrice = projected[lastActualIndex].price;
+        for (let index = lastActualIndex + 1; index < projected.length; index += 1) {
+          previousPrice = Math.max(0, previousPrice + dailyTrend);
+          projected[index].displayPrice = previousPrice;
+          projected[index].forecast = true;
+        }
+        return projected;
+      }
+
+      function overallMedianForFuel(summary, fuel) {
+        const rows = summary?.brand_distributions?.[fuel] || [];
+        const overall = rows.find((row) => row.brand === "Gesamtmarkt") || rows[0];
+        const median = Number(overall?.median);
+        return Number.isFinite(median) ? median : null;
+      }
+
+      async function loadWeeklyRows(baseDate) {
+        const weekStart = startOfWeekMonday(baseDate);
+        const dates = Array.from({ length: 7 }, (_value, index) =>
+          addDays(weekStart, index),
+        );
+        const rows = await Promise.all(
+          dates.map(async (date) => {
+            try {
+              const response = await fetch(urlForDate(date), {
+                cache: "no-store",
+              });
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              const summary = await response.json();
+              return {
+                date,
+                price: overallMedianForFuel(summary, state.fuel),
+              };
+            } catch {
+              return {
+                date,
+                price: null,
+              };
+            }
+          }),
+        );
+        state.weeklyRows = rows;
+        drawWeeklyChart();
+      }
+
+      function drawWeeklyChart() {
+        const rows = forecastWeeklyRows(state.weeklyRows || []);
+        weeklyTitleEl.textContent = `Preisverlauf Montag bis Sonntag · ${fuelDisplayName(state.fuel)}`;
+        resizeCanvas(weeklyCanvas, weeklyCtx);
+        const w = weeklyCanvas.getBoundingClientRect().width;
+        const h = weeklyCanvas.getBoundingClientRect().height;
+        const theme = currentChartTheme();
+        const plot = { left: 58, right: 18, top: 24, bottom: 50 };
+        plot.width = w - plot.left - plot.right;
+        plot.height = h - plot.top - plot.bottom;
+        state.weeklyLayout = { plot, w, h, rows };
+
+        weeklyCtx.clearRect(0, 0, w, h);
+        const values = rows
+          .map((row) => row.displayPrice)
+          .filter((value) => Number.isFinite(value));
+
+        weeklyCtx.strokeStyle = theme.grid;
+        weeklyCtx.fillStyle = theme.axisText;
+        weeklyCtx.lineWidth = 1;
+        weeklyCtx.font = "12px Manrope, sans-serif";
+
+        if (!values.length) {
+          weeklyCtx.fillStyle = theme.axisText;
+          weeklyCtx.textAlign = "center";
+          weeklyCtx.fillText(
+            "Für diese Woche liegen noch keine Management-Daten vor.",
+            w / 2,
+            h / 2,
+          );
+          return;
+        }
+
+        const domain = computeSeriesDomain(values);
+        const tickCount = 4;
+        for (let index = 0; index < tickCount; index += 1) {
+          const value =
+            domain.min + (index * (domain.max - domain.min)) / (tickCount - 1);
+          const y = yScale(domain, plot, value);
+          weeklyCtx.beginPath();
+          weeklyCtx.moveTo(plot.left, y);
+          weeklyCtx.lineTo(plot.left + plot.width, y);
+          weeklyCtx.stroke();
+          weeklyCtx.fillText(formatBrandStatusValue(value), 8, y + 4);
+        }
+
+        weeklyCtx.save();
+        weeklyCtx.translate(18, plot.top + plot.height / 2);
+        weeklyCtx.rotate(-Math.PI / 2);
+        weeklyCtx.textAlign = "center";
+        weeklyCtx.fillStyle = theme.axisTitle;
+        weeklyCtx.fillText(`Preis ${fuelDisplayName(state.fuel)} (EUR/l)`, 0, 0);
+        weeklyCtx.restore();
+
+        const step = rows.length > 1 ? plot.width / (rows.length - 1) : 0;
+        const points = rows.map((row, index) => ({
+          row,
+          x: plot.left + index * step,
+          y: Number.isFinite(row.displayPrice)
+            ? yScale(domain, plot, row.displayPrice)
+            : null,
+        }));
+
+        const fuelColor = FUEL_COLORS[state.fuel] || "#0f766e";
+        weeklyCtx.strokeStyle = fuelColor;
+        weeklyCtx.lineWidth = 3;
+        weeklyCtx.beginPath();
+        let hasOpenPath = false;
+        points.forEach((point) => {
+          if (point.y === null || point.row.forecast) {
+            hasOpenPath = false;
+            return;
+          }
+          if (!hasOpenPath) {
+            weeklyCtx.moveTo(point.x, point.y);
+            hasOpenPath = true;
+            return;
+          }
+          weeklyCtx.lineTo(point.x, point.y);
+        });
+        weeklyCtx.stroke();
+
+        const firstForecastIndex = points.findIndex(
+          (point) => point.row.forecast && point.y !== null,
+        );
+        if (firstForecastIndex > 0) {
+          weeklyCtx.save();
+          weeklyCtx.setLineDash([8, 6]);
+          weeklyCtx.strokeStyle = fuelColor;
+          weeklyCtx.lineWidth = 3;
+          weeklyCtx.beginPath();
+          weeklyCtx.moveTo(points[firstForecastIndex - 1].x, points[firstForecastIndex - 1].y);
+          for (let index = firstForecastIndex; index < points.length; index += 1) {
+            if (points[index].y !== null) {
+              weeklyCtx.lineTo(points[index].x, points[index].y);
+            }
+          }
+          weeklyCtx.stroke();
+          weeklyCtx.setLineDash([]);
+          weeklyCtx.fillStyle = theme.legendText;
+          weeklyCtx.font = "12px Manrope, sans-serif";
+          weeklyCtx.textAlign = "right";
+          weeklyCtx.fillText("gestrichelt: Prognose", plot.left + plot.width, plot.top + 12);
+          weeklyCtx.restore();
+        }
+
+        weeklyCtx.textAlign = "center";
+        points.forEach((point) => {
+          weeklyCtx.fillStyle = theme.tickText;
+          weeklyCtx.fillText(
+            weekdayShortLabel(point.row.date),
+            point.x - 10,
+            plot.top + plot.height + 24,
+          );
+          weeklyCtx.fillText(
+            displayDateLabel(point.row.date),
+            point.x - 14,
+            plot.top + plot.height + 40,
+          );
+          if (point.y === null) return;
+          weeklyCtx.beginPath();
+          weeklyCtx.arc(point.x, point.y, 4.5, 0, Math.PI * 2);
+          if (point.row.forecast) {
+            weeklyCtx.fillStyle = currentChartTheme().grid;
+            weeklyCtx.strokeStyle = fuelColor;
+            weeklyCtx.lineWidth = 2;
+            weeklyCtx.fill();
+            weeklyCtx.stroke();
+          } else {
+            weeklyCtx.fillStyle = fuelColor;
+            weeklyCtx.fill();
+          }
+          weeklyCtx.fillStyle = theme.axisText;
+          weeklyCtx.fillText(
+            formatBrandStatusValue(point.row.displayPrice),
+            point.x,
+            point.y - 12,
+          );
+        });
+      }
+
       function computeBrandDomain(rows) {
         return BRAND_PRICE_DOMAIN;
       }
@@ -1380,6 +1643,7 @@
           draw();
           drawBrandChart();
           drawHistogramChart();
+          drawWeeklyChart();
         });
       });
 
@@ -1390,7 +1654,9 @@
 
       async function updateNav() {
         const minDate = parseISODate(MIN_DATE_STR);
-        const maxDate = addDays(berlinToday(), -1);
+        const maxDate = datePicker.max
+          ? parseISODate(datePicker.max)
+          : addDays(berlinToday(), -1);
 
         const prevDate = addDays(state.date, -1);
         const nextDate = addDays(state.date, 1);
@@ -1406,6 +1672,15 @@
         state.nav.prev = prevOk;
         state.nav.next = nextOk;
         setArrowVisibility();
+      }
+
+      async function latestAvailableDate(maxDate, minDate) {
+        let candidate = maxDate;
+        while (candidate >= minDate) {
+          if (await exists(urlForDate(candidate))) return candidate;
+          candidate = addDays(candidate, -1);
+        }
+        return minDate;
       }
 
       async function loadForDate(d) {
@@ -1433,12 +1708,20 @@
           draw();
           drawBrandChart();
           drawHistogramChart();
+          loadWeeklyRows(d).catch((weeklyError) => {
+            console.warn("Weekly chart failed", weeklyError);
+            state.weeklyRows = [];
+            drawWeeklyChart();
+          });
         } catch (e) {
           setStatus("Management-Daten konnten nicht geladen werden.", "error");
           state.summary = null;
           state.noonDeltaSummary = null;
           state.brandLayout = null;
           state.histogramLayout = null;
+          state.weeklyRows = [];
+          state.weeklyLayout = null;
+          weeklyCtx.clearRect(0, 0, weeklyCanvas.width, weeklyCanvas.height);
           brandCtx.clearRect(0, 0, brandCanvas.width, brandCanvas.height);
           histogramCtx.clearRect(
             0,
@@ -1455,6 +1738,7 @@
           draw();
           drawBrandChart();
           drawHistogramChart();
+          drawWeeklyChart();
         }
       });
 
@@ -1463,6 +1747,7 @@
         draw();
         drawBrandChart();
         drawHistogramChart();
+        drawWeeklyChart();
       });
 
       prevBtn.addEventListener("click", () => {
@@ -1477,7 +1762,11 @@
 
       datePicker.addEventListener("change", () => {
         if (!datePicker.value) return;
-        loadForDate(parseISODate(datePicker.value));
+        let target = parseISODate(datePicker.value);
+        if (datePicker.max && target > parseISODate(datePicker.max)) {
+          target = parseISODate(datePicker.max);
+        }
+        loadForDate(target);
       });
 
       window.addEventListener("keydown", (e) => {
@@ -1492,20 +1781,22 @@
       });
 
       // Init date picker bounds and initial date
-      (() => {
+      (async () => {
         const minDate = parseISODate(MIN_DATE_STR);
         const maxDate = addDays(berlinToday(), -1);
+        const availableMaxDate = await latestAvailableDate(maxDate, minDate);
         datePicker.min = MIN_DATE_STR;
-        datePicker.max = formatISODate(maxDate);
+        datePicker.max = formatISODate(availableMaxDate);
+        dataAvailabilityNoteEl.textContent = `Datenstand: ${formatISODate(availableMaxDate)} (neuester lokal verfügbarer Datensatz)`;
 
         const urlParams = new URLSearchParams(window.location.search);
         const qs = urlParams.get("date");
-        let initial = maxDate;
+        let initial = availableMaxDate;
         if (qs && /^\d{4}-\d{2}-\d{2}$/.test(qs)) {
           initial = parseISODate(qs);
         }
         if (initial < minDate) initial = minDate;
-        if (initial > maxDate) initial = maxDate;
+        if (initial > availableMaxDate) initial = availableMaxDate;
         loadForDate(initial);
       })();
     </script>
