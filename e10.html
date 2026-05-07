@@ -121,18 +121,29 @@
             kannst.
           </p>
         </div>
-        <label class="filter-chip" for="sort-mode">
-          <span class="filter-chip-label">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M4 7h16M7 12h10M10 17h4" />
-            </svg>
-            Sortierung
-          </span>
-          <select id="sort-mode" aria-label="Stationen sortieren">
-            <option value="distance">Distanz</option>
-            <option value="price">Preis</option>
-          </select>
-        </label>
+        <div class="header-controls">
+          <label class="filter-chip" for="sort-mode">
+            <span class="filter-chip-label">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M7 12h10M10 17h4" />
+              </svg>
+              Sortierung
+            </span>
+            <select id="sort-mode" aria-label="Stationen sortieren">
+              <option value="distance">Distanz</option>
+              <option value="price">Preis</option>
+            </select>
+          </label>
+          <label class="filter-chip" for="award-filter">
+            <span class="filter-chip-label">Filter</span>
+            <select id="award-filter" aria-label="Nach Auszeichnung filtern">
+              <option value="all">Alle</option>
+              <option value="bronze">★ Bronze+</option>
+              <option value="silver">★ Silber+</option>
+              <option value="gold">★ Gold</option>
+            </select>
+          </label>
+        </div>
       </header>
 
       <section class="hero" id="location-hint">
@@ -236,7 +247,8 @@
     </nav>
 
     <script src="app-stats.js"></script>
-    <script src="station-catalog.js"></script>
+    <script src="station-catalog.js?v=20260504-clean-fallback"></script>
+    <script src="customer-awards.js?v=20260504-awards"></script>
     <script>
       const DATA_BASE = "data2/";
       const FUEL = "e10";
@@ -246,15 +258,21 @@
       const FALLBACK_STATUS_MESSAGE =
         "Livepreise sind derzeit nicht verfügbar. Wir zeigen nahe Tankstellen aus dem lokalen Verzeichnis.";
       const SEARCH_RADIUS_KM = 10;
+      const PAGE_PARAMS = new URLSearchParams(window.location.search);
+      const FORCE_LOCAL_STATIONS = PAGE_PARAMS.get("debugLocal") === "1";
+      const PRESERVED_NAV_PARAMS = ["lat", "lng"];
 
       const statusEl = document.getElementById("status");
       const stationsEl = document.getElementById("stations");
       const sortModeEl = document.getElementById("sort-mode");
+      const awardFilterEl = document.getElementById("award-filter");
       const locationRequestBtn = document.getElementById("location-request-btn");
       const priceHeadingEl = document.getElementById("price-heading");
       const ids = JSON.parse(localStorage.getItem("ids")) || [];
       const fav = JSON.parse(localStorage.getItem("fav")) || [];
       const SORT_STORAGE_KEY = `tankzeit_sort_${FUEL}`;
+      const AWARD_FILTER_STORAGE_KEY = `tankzeit_award_filter_${FUEL}`;
+      const AWARD_TIER_RANKS = { bronze: 1, silver: 2, gold: 3 };
       const LOCATION_OPTIONS = { enableHighAccuracy: false, maximumAge: 300000 };
       const LOCATION_DEADLINE_MS = 25000;
       let currentCenter = null;
@@ -263,12 +281,45 @@
       let locationDeadlineId = null;
 
       sortModeEl.value = localStorage.getItem(SORT_STORAGE_KEY) || "distance";
+      awardFilterEl.value =
+        localStorage.getItem(AWARD_FILTER_STORAGE_KEY) || "all";
       sortModeEl.addEventListener("change", () => {
         localStorage.setItem(SORT_STORAGE_KEY, sortModeEl.value);
         if (currentCenter) {
           loadStations(currentCenter.lat, currentCenter.lng);
         }
       });
+      awardFilterEl.addEventListener("change", () => {
+        localStorage.setItem(AWARD_FILTER_STORAGE_KEY, awardFilterEl.value);
+        if (currentCenter) {
+          loadStations(currentCenter.lat, currentCenter.lng);
+        }
+      });
+
+      function preservedNavigationQuery() {
+        const query = new URLSearchParams();
+        PRESERVED_NAV_PARAMS.forEach((name) => {
+          const value = PAGE_PARAMS.get(name);
+          if (value) {
+            query.set(name, value);
+          }
+        });
+        const serialized = query.toString();
+        return serialized ? `?${serialized}` : "";
+      }
+
+      function preserveNavigationParams() {
+        const query = preservedNavigationQuery();
+        if (!query) {
+          return;
+        }
+        document
+          .querySelectorAll('a[href="index.html"], a[href="e10.html"]')
+          .forEach((link) => {
+            const href = link.getAttribute("href");
+            link.setAttribute("href", `${href}${query}`);
+          });
+      }
 
       function escapeHtml(value) {
         return String(value ?? "")
@@ -285,6 +336,10 @@
 
       function mapsUrl(lat, lng) {
         return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+      }
+
+      function isSupportedCoordinate(lat, lng) {
+        return lat >= 47 && lat <= 56 && lng >= 5 && lng <= 16;
       }
 
       function chartUrl(stationId, stationName, lat, lng) {
@@ -469,9 +524,25 @@
       }
 
       function formatStationName(station) {
-        return station.brand
+        const label = station.brand
           ? `${escapeHtml(station.name)} (${escapeHtml(station.brand)})`
           : escapeHtml(station.name);
+        const badge =
+          window.TankzeitCustomerAwards?.badgeForStation(station.id) || "";
+        return `<span class="station-name-with-award"><span>${label}</span>${badge}</span>`;
+      }
+
+      function filterStationsByAward(stations) {
+        const minimumTier = awardFilterEl.value;
+        const minimumRank = AWARD_TIER_RANKS[minimumTier] || 0;
+        if (!minimumRank) {
+          return stations;
+        }
+        return stations.filter((station) => {
+          const award = window.TankzeitCustomerAwards?.awardForStation(station.id);
+          const tierRank = AWARD_TIER_RANKS[award?.tier] || 0;
+          return tierRank >= minimumRank;
+        });
       }
 
       async function loadFallbackStations(lat, lng) {
@@ -483,7 +554,17 @@
       }
 
       async function renderStations(stations) {
-        const limited = stations.slice(0, 10);
+        await window.TankzeitCustomerAwards?.loadAwards();
+        const filteredStations = filterStationsByAward(stations);
+        if (!filteredStations.length) {
+          const message =
+            awardFilterEl.value === "all"
+              ? "Keine Stationen im Umkreis gefunden."
+              : "keine Treffer für diese Auswahl gefunden";
+          stationsEl.innerHTML = `<tr><td colspan='5'>${message}</td></tr>`;
+          return;
+        }
+        const limited = filteredStations.slice(0, 10);
         stationsEl.innerHTML = limited
           .map((s) => {
             const isSaved = ids.includes(s.id);
@@ -529,10 +610,6 @@
             document.getElementById(`${s.id}-minimum`).textContent =
               TankzeitStats.relativeMinimumText(stats, stats.text || "-");
 
-            if (TankzeitStats.isNowInRelativeMinimumWindow(stats)) {
-              const row = document.getElementById(s.id);
-              row.classList.add("row-highlight");
-            }
           }),
         );
       }
@@ -540,6 +617,23 @@
       async function loadStations(lat, lng) {
         currentCenter = { lat, lng };
         setStatus("Stationen werden geladen...");
+        if (FORCE_LOCAL_STATIONS) {
+          setLivePriceAvailability(false);
+          const fallbackStations = sortStations(
+            await loadFallbackStations(lat, lng),
+          );
+          if (!fallbackStations.length) {
+            stationsEl.innerHTML =
+              "<tr><td colspan='5'>Keine Stationen im Umkreis gefunden.</td></tr>";
+            setStatus(
+              "Im lokalen Verzeichnis wurden keine Stationen im Umkreis gefunden.",
+            );
+            return;
+          }
+          await renderStations(fallbackStations);
+          setStatus("Lokale Stationsliste geladen.");
+          return;
+        }
         const url = `https://creativecommons.tankerkoenig.de/json/list.php?rad=10&type=all&sort=dist&lat=${lat}&lng=${lng}&apikey=fe8673d1-47be-1156-77e4-040e06cb785c`;
         try {
           const prices = await fetchJson(url);
@@ -591,9 +685,32 @@
         }
       }
 
+      function loadLocationFromUrl() {
+        const lat = Number(PAGE_PARAMS.get("lat"));
+        const lng = Number(PAGE_PARAMS.get("lng"));
+        if (
+          !Number.isFinite(lat) ||
+          !Number.isFinite(lng) ||
+          !isSupportedCoordinate(lat, lng)
+        ) {
+          return false;
+        }
+        clearLocationRequest();
+        setLocationButtonBusy(false);
+        const hint = document.getElementById("location-hint");
+        if (hint) {
+          hint.style.display = "none";
+        }
+        loadStations(lat, lng);
+        return true;
+      }
+
       setLivePriceAvailability(true);
+      preserveNavigationParams();
       locationRequestBtn.addEventListener("click", requestLocation);
-      requestLocation();
+      if (!loadLocationFromUrl()) {
+        requestLocation();
+      }
     </script>
     <script src="app-install-promo.js?v=20260409-app-promo-v12"></script>
   </body>

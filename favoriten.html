@@ -110,6 +110,7 @@
 
     <script src="app-stats.js"></script>
     <script src="fuel-breakdown.js"></script>
+    <script src="customer-awards.js?v=20260504-awards"></script>
     <script>
       const DATA_BASE = "data2/";
       const TANKERKOENIG_APOLOGY =
@@ -164,6 +165,13 @@
           backPath: "favoriten.html",
           backLabel: "Zurück zu Favoriten",
         });
+      }
+
+      function formatFavoriteName(station) {
+        const label = escapeHtml(station.name || "Tankstelle");
+        const badge =
+          window.TankzeitCustomerAwards?.badgeForStation(station.id) || "";
+        return `<span class="station-name-with-award"><span>${label}</span>${badge}</span>`;
       }
 
       function setStatus(message, type = "info") {
@@ -306,12 +314,13 @@
         }
       }
 
-      function render() {
+      async function render() {
         if (!fav.length) {
           favoritesEl.innerHTML =
             "<tr><td colspan='6'>Keine Favoriten gespeichert.</td></tr>";
           return;
         }
+        await window.TankzeitCustomerAwards?.loadAwards();
         favoritesEl.innerHTML = fav
           .map(
             (station) => {
@@ -321,7 +330,7 @@
               );
               return `
           <tr>
-            <td data-label="Name"><a href="${mapsHref}" target="_blank" rel="noopener">${escapeHtml(station.name)}</a></td>
+            <td data-label="Name"><a href="${mapsHref}" target="_blank" rel="noopener">${formatFavoriteName(station)}</a></td>
             <td data-label="E10" id="${station.id}-e10">...</td>
             <td data-label="Diesel" id="${station.id}-diesel">...</td>
             <td data-label="E10 Mittag / Senkungen" id="${station.id}-profile"><a href="${detailsHref}">Details</a></td>
