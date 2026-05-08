@@ -11,6 +11,7 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta
       name="description"
       content="Sparpotenzial beim Tanken aus Verbrauch, Fahrleistung, Tagespreisen und typischen Tankzeiten berechnen."
@@ -164,6 +165,7 @@
       const DATA_BASE = "data2/";
       const SEARCH_RADIUS_KM = 10;
       const MAX_STATIONS = 12;
+      const REMINDER_STORAGE_KEY = "tankzeit-sparrechner-reminder";
       const WEEKDAYS = [
         "Sonntag",
         "Montag",
@@ -186,6 +188,8 @@
       const currentLitersEl = document.getElementById("current-liters");
       let currentCenter = null;
       let nearbyStations = [];
+      let activeTankPlan = [];
+      let reminderTimeoutId = null;
 
       function escapeHtml(value) {
         return String(value ?? "")
@@ -319,6 +323,105 @@
         return station.brand
           ? `${station.name} (${station.brand})`
           : station.name;
+      }
+
+      function tankStopStartDate(item) {
+        const start = new Date(item.date);
+        const hour = Number.isFinite(item.startHour) ? item.startHour : 18;
+        start.setHours(Math.max(0, Math.min(23, Math.floor(hour))), 0, 0, 0);
+        return start;
+      }
+
+      function reminderDateForStop(item) {
+        const reminderDate = tankStopStartDate(item);
+        reminderDate.setDate(reminderDate.getDate() - 1);
+        reminderDate.setHours(18, 0, 0, 0);
+        const minimumDate = new Date(Date.now() + 5000);
+        return reminderDate > minimumDate ? reminderDate : minimumDate;
+      }
+
+      function reminderPayload(item) {
+        const station = formatStationName(item.station);
+        return {
+          reminderAt: reminderDateForStop(item).toISOString(),
+          stopAt: tankStopStartDate(item).toISOString(),
+          station,
+          dateLabel: formatDate(item.date),
+          timeText: item.timeText,
+          liters: item.litersToFill.toFixed(1).replace(".", ","),
+          price: formatPrice(item.price),
+          saving: formatCurrency(item.saving),
+        };
+      }
+
+      function notificationBody(payload) {
+        return `${payload.dateLabel}: ${payload.timeText} bei ${payload.station}. ${payload.liters} l geplant, Preis ca. ${payload.price}.`;
+      }
+
+      function showTankReminder(payload) {
+        if (!("Notification" in window) || Notification.permission !== "granted") {
+          return;
+        }
+        new Notification("Morgen günstig tanken", {
+          body: notificationBody(payload),
+          tag: "tankzeit-next-stop",
+        });
+      }
+
+      function scheduleStoredReminder() {
+        if (reminderTimeoutId) {
+          window.clearTimeout(reminderTimeoutId);
+          reminderTimeoutId = null;
+        }
+        const raw = localStorage.getItem(REMINDER_STORAGE_KEY);
+        if (!raw) return;
+        let payload;
+        try {
+          payload = JSON.parse(raw);
+        } catch {
+          localStorage.removeItem(REMINDER_STORAGE_KEY);
+          return;
+        }
+        if (new Date(payload.stopAt).getTime() < Date.now()) {
+          localStorage.removeItem(REMINDER_STORAGE_KEY);
+          return;
+        }
+        const delay = new Date(payload.reminderAt).getTime() - Date.now();
+        const maxDelay = 24 * 60 * 60 * 1000;
+        reminderTimeoutId = window.setTimeout(() => {
+          if (delay > maxDelay) {
+            scheduleStoredReminder();
+            return;
+          }
+          showTankReminder(payload);
+          localStorage.removeItem(REMINDER_STORAGE_KEY);
+        }, Math.max(0, Math.min(delay, maxDelay)));
+      }
+
+      async function enableReminderForNextStop() {
+        const nextStop = activeTankPlan[0];
+        if (!nextStop) {
+          setStatus("Es gibt noch keinen Tankstopp für eine Erinnerung.", "error");
+          return;
+        }
+        if (!("Notification" in window)) {
+          setStatus("Benachrichtigungen werden in diesem Browser nicht unterstützt.", "error");
+          return;
+        }
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+        if (permission !== "granted") {
+          setStatus("Benachrichtigungen wurden nicht erlaubt.", "error");
+          return;
+        }
+        const payload = reminderPayload(nextStop);
+        localStorage.setItem(REMINDER_STORAGE_KEY, JSON.stringify(payload));
+        scheduleStoredReminder();
+        setStatus(
+          `App-Benachrichtigung aktiv: am Vortag um 18:00 Uhr für ${payload.dateLabel}, ${payload.timeText}.`,
+        );
       }
 
       function readInputs() {
@@ -478,6 +581,7 @@
       }
 
       function renderResults(plan, inputs) {
+        activeTankPlan = plan;
         if (!plan.length) {
           resultsEl.innerHTML = `
             <article class="card savings-empty">
@@ -516,6 +620,19 @@
               <span>Verbrauch pro Woche</span>
               <strong>${litersPerWeek.toFixed(1).replace(".", ",")} l</strong>
             </article>
+          </section>
+          <section class="card savings-reminder-card">
+            <div>
+              <p class="savings-kicker">App-Benachrichtigung</p>
+              <h2>Am Vortag erinnern lassen</h2>
+              <p>
+                Die App merkt sich den nächsten Tankstopp und erinnert dich am
+                Vortag um 18:00 Uhr mit Tag und empfohlener Uhrzeit.
+              </p>
+            </div>
+            <button class="btn primary" id="tank-reminder-btn" type="button">
+              Benachrichtigung aktivieren
+            </button>
           </section>
           <section class="card">
             <table class="table">
@@ -627,10 +744,16 @@
         event.preventDefault();
         calculate();
       });
+      resultsEl.addEventListener("click", (event) => {
+        if (event.target && event.target.id === "tank-reminder-btn") {
+          enableReminderForNextStop();
+        }
+      });
       [fuelEl, consumptionEl, tankVolumeEl, currentLitersEl, ...dayKmInputs].forEach((element) => {
         element.addEventListener("change", calculate);
       });
       locationRequestBtn.addEventListener("click", requestLocation);
+      scheduleStoredReminder();
       requestLocation();
     </script>
   </body>

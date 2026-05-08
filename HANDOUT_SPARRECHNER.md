@@ -1,132 +1,167 @@
 # Handout: Sparpotenzial Rechner
 
-## Ziel der Änderung
+## Ziel
 
-Der bestehende Tankzeit-Webauftritt wurde um einen Sparpotenzial Rechner erweitert. Statt nur günstige Tankzeiten anzuzeigen, kann die Seite jetzt auf Basis persönlicher Fahrdaten eine konkrete Tankplanung erstellen.
+Der Sparpotenzial Rechner soll aus persoenlichen Fahrdaten und historischen Tankzeit-Daten eine konkrete Tankplanung erstellen. Nutzer sollen nicht nur sehen, wann Tanken allgemein guenstig ist, sondern wann sie persoenlich am besten tanken sollten.
 
-## Was wurde verändert?
+Die zentrale Frage lautet:
 
-### 1. Neue Seite: `sparrechner.html`
+> Wann sollte ich mit meinem Verbrauch, meinem Tankstand und meiner Fahrleistung tanken, damit ich moeglichst guenstig unterwegs bin?
 
-Es wurde eine neue Seite für den Sparrechner erstellt.
+## Was wurde gemacht?
 
-Der Nutzer kann dort eingeben:
+### Neue Seite: `sparrechner.html`
+
+Es wurde eine eigene Seite fuer den Sparpotenzial Rechner erstellt. Die Seite ist ueber den Tab **Sparen** erreichbar.
+
+Der Nutzer kann eingeben:
 
 - Kraftstoffart: Diesel, E10 oder E5
 - Verbrauch in Liter pro 100 km
 - Kilometer pro Wochentag
-- Tankvolumen des Autos
-- aktueller Tankinhalt in Litern
+- Tankvolumen in Liter
+- aktueller Tankinhalt in Liter
 
-Aus diesen Angaben berechnet die Seite eine Tankplanung.
+### Tankplanung statt einzelner Empfehlung
 
-### 2. Navigation erweitert
+Der Rechner gibt nicht nur eine einzelne Empfehlung aus, sondern plant die **naechsten 4 Tankstopps**.
 
-In der unteren Navigation wurde ein neuer Tab `Sparen` ergänzt.
+In der Ergebnis-Tabelle werden angezeigt:
 
-Dadurch ist der Sparrechner direkt über die Hauptnavigation erreichbar.
-
-Der Tab wurde unter anderem ergänzt in:
-
-- `index.html`
-- `e10.html`
-- `favoriten.html`
-- `management.html`
-- `info.html`
-- `chart.html`
-- `price.html`
-
-### 3. Startseite erweitert
-
-Auf der Hauptseite wurde zusätzlich ein Hinweisbereich eingebaut:
-
-`Sparpotenzial Rechner`
-
-Über diesen Bereich kann man direkt zum Rechner wechseln.
-
-### 4. Eingaben verbessert
-
-Die erste Version hatte nur eine einfache Angabe wie `Kilometer pro Woche` und `Tankmenge pro Stopp`.
-
-Das wurde verbessert:
-
-- Kilometer können jetzt pro Wochentag eingetragen werden.
-- Statt einer festen Tankmenge wird das echte Tankvolumen des Autos angegeben.
-- Zusätzlich wird der aktuelle Tankstand in Litern berücksichtigt.
-
-### 5. Ergebnis verbessert
-
-Vorher gab es nur eine einzelne Empfehlung.
-
-Jetzt erstellt der Rechner eine Tankplanung für die nächsten 4 Tankstopps.
-
-Die Planung zeigt:
-
-- Datum
-- Uhrzeit
 - Tankstelle
+- Datum
+- empfohlene Uhrzeit
 - geplante Liter
-- geschätzter Preis
-- geschätzte Ersparnis
+- geschaetzter Preis
+- geschaetzte Ersparnis
 
-## Wie funktioniert die Berechnung grob?
+### App-Benachrichtigung
 
-1. Der Rechner nimmt den aktuellen Moment als Startpunkt.
-2. Er berechnet anhand von Verbrauch, Tageskilometern und aktuellem Tankstand, wie lange der Tank ungefähr reicht.
-3. Innerhalb dieses Zeitraums sucht er günstige Tankmöglichkeiten.
-4. Danach wird angenommen, dass der Tank wieder voll ist.
-5. Dieser Ablauf wird wiederholt, bis 4 Tankstopps geplant sind.
+Zusaetzlich gibt es eine Option fuer eine App-Benachrichtigung.
 
-Die Preise werden aus den vorhandenen historischen Daten und Tankzeit-Profilen berechnet.
+Wenn der Nutzer den Button **Benachrichtigung aktivieren** anklickt, merkt sich die App den naechsten geplanten Tankstopp. Die Erinnerung soll am Vortag um 18:00 Uhr erscheinen und enthaelt:
+
+- den Tanktag
+- die empfohlene Uhrzeit
+- die Tankstelle
+- die geplante Liter-Menge
+- den ungefaehren Preis
+
+Wichtig: Der Nutzer muss Benachrichtigungen im Browser erlauben. Auf dem Handy funktioniert das am besten, wenn die Webseite als App/PWA installiert ist.
+
+## Wie wird berechnet?
+
+### 1. Startpunkt
+
+Der Rechner startet immer beim aktuellen Moment. Dadurch wird nicht mit einem festen Datum gerechnet, sondern mit der aktuellen Situation des Nutzers.
+
+### 2. Verbrauch pro Tag
+
+Aus den Tageskilometern und dem Verbrauch wird berechnet, wie viele Liter pro Tag benoetigt werden.
+
+Formel:
+
+```text
+Tagesverbrauch = Kilometer am Tag * Verbrauch / 100
+```
+
+Beispiel:
+
+```text
+40 km * 6,5 l / 100 km = 2,6 l pro Tag
+```
+
+### 3. Reichweite des aktuellen Tanks
+
+Mit dem aktuellen Tankinhalt wird berechnet, bis zu welchem Tag der Kraftstoff reicht.
+
+Der Rechner zieht fuer jeden Tag den berechneten Tagesverbrauch vom aktuellen Tankstand ab. Sobald der Tank fuer den naechsten Tag nicht mehr reicht, entsteht ein spaetester Tanktermin.
+
+### 4. Guenstige Tankmoeglichkeiten suchen
+
+Bis zu diesem spaetesten Tanktermin sucht der Rechner passende Tankmoeglichkeiten bei nahegelegenen Tankstellen.
+
+Dafuer werden historische Daten genutzt:
+
+- durchschnittliche Preise je Wochentag
+- typische guenstige Uhrzeiten
+- Preisprofile der Tankstellen
+
+### 5. Beste Option waehlen
+
+Die moeglichen Tankstopps werden verglichen. Bevorzugt wird:
+
+1. der niedrigere Preis
+2. bei gleichem Preis der fruehere Tag
+3. bei gleichem Tag die naehere Tankstelle
+
+### 6. Tank wieder auffuellen
+
+Nach einem geplanten Tankstopp wird angenommen, dass der Tank wieder bis zum angegebenen Tankvolumen gefuellt ist.
+
+Danach beginnt die Berechnung erneut, bis die naechsten 4 Tankstopps geplant sind.
+
+## Was ist die Ersparnis?
+
+Die Ersparnis wird pro Liter aus dem Unterschied zwischen einem typischen Referenzpreis und dem guenstigeren geplanten Preis berechnet.
+
+Formel:
+
+```text
+Ersparnis = geplante Liter * Ersparnis pro Liter
+```
+
+Beispiel:
+
+```text
+40 l * 0,08 EUR = 3,20 EUR Ersparnis
+```
 
 ## Wichtige Dateien
 
 - `sparrechner.html`  
-  Enthält die neue Rechner-Seite und die Berechnungslogik.
+  Enthaelt die Seite, Eingaben, Tankplanung, Berechnung und App-Benachrichtigung.
 
 - `styles.css`  
-  Enthält das Styling für Formular, Tageskilometer und Ergebnisanzeige.
+  Enthaelt das Design fuer Formular, Ergebnisbereich, Tabellen und Benachrichtigungs-Karte.
+
+- `station-catalog.js`  
+  Laedt Tankstellen und findet nahe Stationen anhand des Standorts.
+
+- `app-stats.js`  
+  Hilft bei der Auswertung der Preisprofile und guenstigen Zeitfenster.
 
 - `serve-local.ps1`  
-  Kleiner lokaler Server, um die Website im Browser testen zu können.
+  Startet die Webseite lokal im Browser.
 
-- `index.html`  
-  Enthält den Einstieg zum Sparrechner auf der Hauptseite.
+## Kurze Anleitung
 
-## Kurze Anleitung zum Starten
-
-PowerShell öffnen und diese Befehle ausführen:
+PowerShell:
 
 ```powershell
 cd C:\Users\G8\Documents\GitHub\tankzeit.de
-powershell -ExecutionPolicy Bypass -File .\serve-local.ps1
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\serve-local.ps1
 ```
 
-Danach im Browser öffnen:
+Browser:
 
 ```text
 http://127.0.0.1:4173/sparrechner.html
 ```
 
-Zum Beenden des lokalen Servers:
+## Vorfuehrung
 
-```text
-Strg + C
-```
+1. Sparrechner im Browser oeffnen.
+2. Standort erlauben, damit nahe Tankstellen geladen werden.
+3. Verbrauch eintragen, z. B. `6.5`.
+4. Kilometer pro Wochentag eintragen.
+5. Tankvolumen in Liter eintragen, z. B. `55`.
+6. Aktuellen Tankinhalt eintragen, z. B. `25`.
+7. Auf **Berechnen** klicken.
+8. Die naechsten 4 Tankstopps ansehen.
+9. Optional **Benachrichtigung aktivieren**, damit die App am Vortag an den naechsten Tankstopp erinnert.
 
-## Kurze Anleitung zur Vorführung
+## Kurz erklaert
 
-1. Website lokal starten.
-2. Im Browser die Seite `sparrechner.html` öffnen.
-3. Standortzugriff erlauben, damit nahe Tankstellen gefunden werden.
-4. Beispielwerte eingeben:
-   - Verbrauch: `6.5`
-   - Kilometer pro Tag: z. B. Montag bis Freitag `40`
-   - Tankvolumen: `55`
-   - Aktuell im Tank: `25`
-5. Auf `Berechnen` klicken.
-6. Die Seite zeigt die nächsten 4 geplanten Tankstopps.
-
-## Kurzer Erklärungssatz
-
-Ich habe die Tankzeit-Seite um einen persönlichen Sparrechner erweitert, der aus Verbrauch, Fahrstrecke, Tankvolumen, aktuellem Tankstand und historischen Preisdaten eine konkrete Tankplanung für die nächsten 4 Tankstopps berechnet.
+Ich habe einen persoenlichen Sparpotenzial Rechner gebaut. Er kombiniert Verbrauch, Tageskilometer, Tankvolumen, aktuellen Tankstand, Standortdaten und historische Preisprofile. Daraus entsteht eine konkrete Planung fuer die naechsten 4 Tankstopps inklusive Preis, Uhrzeit, Liter-Menge, Ersparnis und optionaler App-Benachrichtigung.

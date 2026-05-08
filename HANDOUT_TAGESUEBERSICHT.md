@@ -1,116 +1,196 @@
-# Handout: Tagesübersicht in der Statistik
+# Handout: Tagesuebersicht in der Statistik
 
-## Ziel der Änderung
+## Ziel
 
-Die Statistikseite wurde um eine Tagesübersicht erweitert. Sie zeigt, wie sich der Kraftstoffpreis innerhalb einer Woche von Montag bis Sonntag entwickelt.
+Die Tagesuebersicht soll zeigen, an welchem Tag einer Woche Tanken eher guenstig oder teuer ist. Statt nur einzelne Uhrzeiten zu betrachten, wird der Preisverlauf von **Montag bis Sonntag** sichtbar gemacht.
 
-Damit kann man besser erkennen, an welchem Tag der Woche Tanken günstiger ist.
+Die zentrale Frage lautet:
 
-## Was wurde verändert?
+> An welchem Tag der aktuellen Woche ist Tanken voraussichtlich am guenstigsten?
 
-### 1. Diagramm in `management.html`
+## Was wurde gemacht?
 
-Die Tagesübersicht wurde direkt in die bestehende Statistikseite eingebaut.
+### Wochen-Diagramm in der Statistik
 
-Die separate Seite `tagesuebersicht.html` wurde wieder entfernt, damit die Funktion nicht als eigene Seite, sondern als Teil der Statistik erscheint.
+Die Tagesuebersicht wurde direkt in die Statistikseite `management.html` eingebaut.
 
-### 2. Neues Diagramm: Montag bis Sonntag
+Das Diagramm heisst:
 
-In der Statistik gibt es jetzt ein neues Liniendiagramm:
+```text
+Preisverlauf Montag bis Sonntag
+```
 
-`Preisverlauf Montag bis Sonntag`
+Es zeigt fuer die Woche des ausgewaehlten Datums den Preisverlauf von Montag bis Sonntag.
 
-Das Diagramm zeigt für die Woche des ausgewählten Datums den Preisverlauf von Montag bis Sonntag.
+### Keine extra Tagesseite mehr
 
-### 3. Kraftstoffauswahl bleibt erhalten
+Eine separate Seite fuer die Tagesuebersicht wurde wieder entfernt. Die Funktion ist jetzt Teil der bestehenden Statistikseite.
 
-Das Diagramm reagiert auf die vorhandenen Kraftstoff-Buttons:
+Das ist uebersichtlicher, weil alle Statistikfunktionen an einem Ort liegen.
 
-- Diesel
-- E10
-- E5
+### Datum und Kraftstoff bleiben steuerbar
 
-Wenn man den Kraftstoff wechselt, aktualisiert sich auch die Tagesübersicht.
+Oben auf der Statistikseite gibt es weiterhin:
 
-### 4. Prognose für fehlende Tage
+- Datumsauswahl
+- Kraftstoffauswahl: Diesel, E10, E5
 
-Wenn für den Rest der Woche noch keine echten Daten vorhanden sind, wird eine Prognose angezeigt.
+Wenn der Kraftstoff gewechselt wird, aktualisiert sich auch die Tagesuebersicht.
+
+### Prognose fuer fehlende Tage
+
+Wenn fuer den Rest der Woche noch keine echten Daten vorhanden sind, wird eine Prognose angezeigt.
 
 Darstellung:
 
-- echte Daten: durchgezogene Linie
-- Prognose: gestrichelte Linie
+- durchgezogene Linie = echte vorhandene Daten
+- gestrichelte Linie = Prognose
 
-Die Prognose basiert auf dem bisherigen Trend der vorhandenen Wochenwerte.
+Die Prognose hilft, die Woche trotzdem vollstaendig von Montag bis Sonntag zu zeigen.
 
-### 5. Datenstand sichtbar gemacht
+### Datenstand sichtbar gemacht
 
-Da lokal nicht immer Daten bis zum aktuellen Datum vorhanden sind, zeigt die Statistikseite jetzt einen Datenstand an.
+Die Statistik zeigt den neuesten lokal verfuegbaren Datenstand an.
 
 Beispiel:
 
-`Datenstand: 2026-04-23`
-
-So ist klar, warum die Statistik eventuell nicht den heutigen Tag zeigt.
-
-## Warum war der aktuelle Tag nicht sichtbar?
-
-Der Browser hatte zwar das richtige Datum, aber im lokalen Projekt lagen Management-Daten nur bis zu einem bestimmten Tag vor.
-
-Wenn eine Datei wie diese fehlt:
-
 ```text
-data2/2026/04/27/management_boxplots.json
+Datenstand: 2026-04-23
 ```
 
-kann die Statistik diesen Tag nicht anzeigen.
+Das ist wichtig, weil lokal nicht immer Daten bis zum echten heutigen Tag vorhanden sind.
 
-Deshalb sucht die Seite jetzt automatisch den neuesten lokal verfügbaren Datensatz.
+## Wie wird berechnet?
+
+### 1. Woche bestimmen
+
+Aus dem ausgewaehlten Datum wird zuerst der Montag der passenden Woche berechnet.
+
+Danach werden die sieben Tage der Woche aufgebaut:
+
+```text
+Montag, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag, Sonntag
+```
+
+### 2. Tagesdaten laden
+
+Fuer jeden dieser Tage versucht die Seite, die lokalen Management-Daten zu laden.
+
+Beispielpfad:
+
+```text
+data2/2026/04/23/management_boxplots.json
+```
+
+Wenn fuer einen Tag keine Datei vorhanden ist, bleibt dieser Tag zunaechst leer.
+
+### 3. 12:00-Referenzpreis verwenden
+
+Fuer jeden vorhandenen Tag wird der Median des 12:00-Referenzpreises genutzt.
+
+Der Median ist sinnvoll, weil einzelne extreme Preise die Darstellung weniger stark verzerren als ein einfacher Durchschnitt.
+
+### 4. Diagramm zeichnen
+
+Die vorhandenen Tageswerte werden als Linie dargestellt.
+
+Auf der X-Achse stehen die Wochentage mit Datum.  
+Auf der Y-Achse steht der Preis in Euro pro Liter.
+
+### 5. Prognose berechnen
+
+Wenn Tage fehlen, wird der bisherige Trend der Woche genutzt.
+
+Vereinfacht:
+
+1. vorhandene echte Tageswerte sammeln
+2. Preisunterschiede zwischen den vorhandenen Tagen berechnen
+3. daraus einen durchschnittlichen Tagestrend ableiten
+4. fehlende Folgetage mit diesem Trend fortschreiben
+
+Beispiel:
+
+```text
+Montag: 2,20 EUR
+Dienstag: 2,22 EUR
+Trend: +0,02 EUR pro Tag
+Mittwoch Prognose: 2,24 EUR
+```
+
+Die prognostizierten Werte werden gestrichelt angezeigt.
+
+## Was sieht man im Ergebnis?
+
+Die Tagesuebersicht zeigt:
+
+- welcher Tag bisher am guenstigsten war
+- wie sich der Preis ueber die Woche entwickelt
+- ob der Preis eher steigt oder faellt
+- welche Tage nur Prognose sind
+
+## Erweiterung im Kettenvergleich
+
+Auf `kettenvergleich.html` wurde das Prinzip ebenfalls genutzt.
+
+Dort wird der Wochenverlauf getrennt nach Gruppen dargestellt:
+
+- Ketten
+- freie/private Tankstellen
+
+Auch dort werden fehlende Folgetage als gestrichelte Prognose angezeigt.
 
 ## Wichtige Dateien
 
 - `management.html`  
-  Enthält die Statistikseite, das neue Wochen-Diagramm und die Prognose-Logik.
+  Enthaelt die Statistikseite, das Wochen-Diagramm und die Prognose-Logik.
+
+- `kettenvergleich.html`  
+  Enthaelt den Wochenvergleich zwischen Ketten und freien Tankstellen.
 
 - `styles.css`  
-  Enthält kleine Layout-Anpassungen für Hinweise und bestehende Statistik-Elemente.
+  Enthaelt Layout und Darstellung der Statistikbereiche.
 
 - `data2/<jahr>/<monat>/<tag>/management_boxplots.json`  
-  Enthält die Daten, aus denen die Statistik-Diagramme berechnet werden.
+  Enthaelt die Tagesdaten fuer die Statistikseite.
 
-## Kurze Anleitung zum Starten
+- `data2/<jahr>/<monat>/<tag>/noon.csv`  
+  Wird im Kettenvergleich fuer die 12:00-Referenzpreise genutzt.
 
-PowerShell öffnen und diese Befehle ausführen:
+## Kurze Anleitung
+
+PowerShell:
 
 ```powershell
 cd C:\Users\G8\Documents\GitHub\tankzeit.de
-powershell -ExecutionPolicy Bypass -File .\serve-local.ps1
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\serve-local.ps1
 ```
 
-Danach im Browser öffnen:
+Browser:
 
 ```text
 http://127.0.0.1:4173/management.html
 ```
 
-Zum Beenden des lokalen Servers:
+Optional fuer den Vergleich Ketten gegen freie Tankstellen:
 
 ```text
-Strg + C
+http://127.0.0.1:4173/kettenvergleich.html
 ```
 
-## Kurze Anleitung zur Vorführung
+## Vorfuehrung
 
 1. Website lokal starten.
-2. Statistikseite öffnen.
-3. Oben den Datenstand erklären.
-4. Kraftstoff auswählen, z. B. Diesel.
-5. Das Diagramm `Preisverlauf Montag bis Sonntag` zeigen.
-6. Erklären:
-   - durchgezogene Linie = echte vorhandene Daten
-   - gestrichelte Linie = Prognose für fehlende/restliche Tage
-7. Optional zwischen Diesel, E10 und E5 wechseln.
+2. Statistikseite oeffnen.
+3. Oben den Datenstand zeigen.
+4. Kraftstoff auswaehlen, z. B. Diesel.
+5. Diagramm **Preisverlauf Montag bis Sonntag** zeigen.
+6. Erklaeren:
+   - durchgezogene Linie = echte Daten
+   - gestrichelte Linie = Prognose
+7. Optional zu E10 oder E5 wechseln.
+8. Optional im Kettenvergleich zeigen, wie sich Ketten und freie Tankstellen unterscheiden.
 
-## Kurzer Erklärungssatz
+## Kurz erklaert
 
-Ich habe die Statistikseite um eine Tagesübersicht erweitert, die den Preisverlauf von Montag bis Sonntag zeigt und fehlende Tage der aktuellen Woche als gestrichelte Prognose ergänzt.
+Ich habe die Statistik um eine Tagesuebersicht erweitert. Sie zeigt den 12:00-Referenzpreis von Montag bis Sonntag und ergaenzt fehlende Tage mit einer gestrichelten Prognose. So kann man besser erkennen, an welchem Wochentag Tanken eher guenstig ist.
