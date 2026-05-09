@@ -160,7 +160,8 @@
     </nav>
 
     <script src="app-stats.js"></script>
-    <script src="station-catalog.js"></script>
+    <script src="station-catalog.js?v=20260504-clean-fallback"></script>
+    <script src="customer-awards.js?v=20260504-awards"></script>
     <script>
       const DATA_BASE = "data2/";
       const SEARCH_RADIUS_KM = 10;
@@ -319,7 +320,7 @@
         return `${year}-${month}-${day}`;
       }
 
-      function formatStationName(station) {
+      function formatStationNameText(station) {
         return station.brand
           ? `${station.name} (${station.brand})`
           : station.name;
@@ -341,7 +342,7 @@
       }
 
       function reminderPayload(item) {
-        const station = formatStationName(item.station);
+        const station = formatStationNameText(item.station);
         return {
           reminderAt: reminderDateForStop(item).toISOString(),
           stopAt: tankStopStartDate(item).toISOString(),
@@ -422,6 +423,13 @@
         setStatus(
           `App-Benachrichtigung aktiv: am Vortag um 18:00 Uhr für ${payload.dateLabel}, ${payload.timeText}.`,
         );
+      }
+
+      function formatStationNameHtml(station) {
+        const label = escapeHtml(formatStationNameText(station));
+        const badge =
+          window.TankzeitCustomerAwards?.badgeForStation(station.id) || "";
+        return `<span class="station-name-with-award"><span>${label}</span>${badge}</span>`;
       }
 
       function readInputs() {
@@ -651,7 +659,7 @@
                   .map(
                     (item, index) => `
                     <tr>
-                      <td data-label="Station">${index + 1}. ${escapeHtml(formatStationName(item.station))}</td>
+                      <td data-label="Station">${index + 1}. ${formatStationNameHtml(item.station)}</td>
                       <td data-label="Datum">${escapeHtml(formatDate(item.date))}</td>
                       <td data-label="Uhrzeit">${escapeHtml(item.timeText)}</td>
                       <td data-label="Liter">${item.litersToFill.toFixed(1).replace(".", ",")} l</td>
@@ -679,6 +687,7 @@
           return;
         }
         setStatus("Tankplan wird berechnet...");
+        await window.TankzeitCustomerAwards?.loadAwards();
         const settled = await Promise.allSettled(
           nearbyStations.map((station) => stationProfile(station, inputs)),
         );

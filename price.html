@@ -117,6 +117,7 @@
     </nav>
 
     <script src="fuel-breakdown.js"></script>
+    <script src="customer-awards.js?v=20260504-awards"></script>
     <script>
       const params = new URLSearchParams(window.location.search);
       const fuel = (params.get("fuel") || "diesel").toLowerCase();
@@ -126,6 +127,15 @@
       const stationName = params.get("name") || "Tankstelle";
       const stationBrand = params.get("brand") || "";
       const calculation = TankzeitFuelBreakdown.calculate(fuel, price);
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
 
       function safeInternalHref(value, fallback) {
         const candidate = String(value || "").trim();
@@ -168,10 +178,22 @@
         return `${day}.${month}.${year}`;
       }
 
+      function stationAwardBadgeHtml() {
+        return window.TankzeitCustomerAwards?.badgeForStation(stationId) || "";
+      }
+
+      function stationNameWithAwardHtml(label) {
+        const badge = stationAwardBadgeHtml();
+        return `<span class="station-name-with-award"><span>${escapeHtml(label)}</span>${badge}</span>`;
+      }
+
       async function renderBrentSupplement(salePrice) {
         const brentStepsEl = document.getElementById("brent-steps");
         try {
-          const brent = await fetchJson("data/brent.json");
+          const [brent] = await Promise.all([
+            fetchJson("data/brent.json"),
+            window.TankzeitCustomerAwards?.loadAwards(),
+          ]);
           const brentPerLiter = TankzeitFuelBreakdown.toNumber(
             brent &&
               (brent.brent_eur_per_crude_liter ?? brent.brent_eur_per_liter),
@@ -183,7 +205,9 @@
           const crudeLabel = brentDateText
             ? `Rohölpreis ${brentDateText}`
             : "Rohölpreis";
-          const operatorLabel = `Betriebskosten und Gewinn von ${stationBrand || stationName}`;
+          const operatorLabel = stationNameWithAwardHtml(
+            stationBrand || stationName,
+          );
 
           brentStepsEl.innerHTML = `
             <div class="breakdown-operator">−</div>
@@ -193,7 +217,7 @@
             </div>
             <div class="breakdown-operator">=</div>
             <div class="breakdown-step breakdown-step-result">
-              <span>${operatorLabel}</span>
+              <span>Betriebskosten und Gewinn von ${operatorLabel}</span>
               <strong>${TankzeitFuelBreakdown.formatEuroPerLiter(operatingDelta)}</strong>
             </div>
           `;
@@ -216,8 +240,14 @@
         backLink.href = backHref;
         backLink.textContent = `← ${backLabel}`;
 
-        document.getElementById("breakdown-title").textContent =
-          `${stationName} · ${fuelConfig.label}`;
+        const titleText = `${stationName} · ${fuelConfig.label}`;
+        const titleEl = document.getElementById("breakdown-title");
+        titleEl.textContent = titleText;
+        window.TankzeitCustomerAwards?.loadAwards().then(() => {
+          if (stationAwardBadgeHtml()) {
+            titleEl.innerHTML = stationNameWithAwardHtml(titleText);
+          }
+        });
         document.getElementById("breakdown-meta").textContent =
           stationBrand && stationBrand !== stationName
             ? `${stationBrand} · Preisaufschlüsselung`

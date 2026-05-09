@@ -8,7 +8,6 @@ from datetime import date
 import html
 import json
 import re
-import shutil
 import unicodedata
 from pathlib import Path
 from urllib.parse import quote
@@ -16,6 +15,7 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parents[1]
 STATIONS_PATH = ROOT / "data" / "stations.json"
 DATA2_DIR = ROOT / "data2"
+CUSTOMER_AWARDS_PATH = ROOT / "data" / "customer_friendliness_awards.json"
 STATION_DIR = ROOT / "station"
 SITEMAP_PATH = ROOT / "sitemap.xml"
 ROBOTS_PATH = ROOT / "robots.txt"
@@ -256,6 +256,37 @@ def load_station_stats(station_id: str) -> dict[str, dict[str, object]]:
             continue
         stats_by_fuel[fuel] = payload
     return stats_by_fuel
+
+
+def load_customer_awards(path: Path = CUSTOMER_AWARDS_PATH) -> dict[str, dict[str, object]]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    awards = payload.get("awards")
+    return awards if isinstance(awards, dict) else {}
+
+
+def station_award_badge_html(
+    station_id: str,
+    awards: dict[str, dict[str, object]] | None,
+) -> str:
+    award = (awards or {}).get(station_id)
+    if not isinstance(award, dict):
+        return ""
+    tier = str(award.get("tier") or "").strip().lower()
+    if tier not in {"gold", "silver", "bronze"}:
+        return ""
+    label = str(award.get("label") or tier.title()).strip()
+    return (
+        f"<span class=\"station-award station-award--{html.escape(tier, quote=True)}\" "
+        f"aria-label=\"Auszeichnung {format_text(label)}\">"
+        "<span class=\"station-award-star\" aria-hidden=\"true\">&#9733;</span>"
+        f"<span>{format_text(label)}</span>"
+        "</span>"
+    )
 
 
 def fuel_range_text(stats: dict[str, object] | None) -> str:
@@ -549,6 +580,7 @@ def build_fuel_cards(
 def build_station_page(
     station: dict[str, object],
     corrections: dict[str, str],
+    awards: dict[str, dict[str, object]] | None = None,
 ) -> tuple[str, str]:
     station_id = str(station.get("uuid") or "").strip()
     name = restore_german_spelling(station.get("name") or "Tankstelle", corrections)
@@ -574,6 +606,7 @@ def build_station_page(
     canonical_href = attribute_url(canonical_url)
     google_maps_href = attribute_url(google_maps_url)
     stats_by_fuel = load_station_stats(station_id)
+    award_badge = station_award_badge_html(station_id, awards)
     description = build_station_description(name, city, street, stats_by_fuel)
     social_title = build_station_social_title(name, city or postcode or "Deutschland")
     social_description = build_station_social_description(stats_by_fuel)
@@ -662,7 +695,10 @@ def build_station_page(
 
       <section class="station-hero">
         <p class="legal-kicker">Tankzeit Station</p>
-        <h1>{format_text(name)}</h1>
+        <div class="station-title-row">
+          <h1>{format_text(name)}</h1>
+          {award_badge}
+        </div>
         <p class="station-summary">{brand_line}{address_html}</p>
         <div class="station-chip-row">
           <span class="station-chip">Diesel: {format_text(fuel_chip_text(stats_by_fuel.get("diesel")))}</span>
@@ -708,12 +744,13 @@ def build_station_page(
 
 def write_station_pages() -> list[str]:
     stations = json.loads(STATIONS_PATH.read_text(encoding="utf-8"))
+    awards = load_customer_awards()
     corrections = build_display_token_corrections(
         [station for station in stations if isinstance(station, dict)]
     )
-    if STATION_DIR.exists():
-        shutil.rmtree(STATION_DIR)
     STATION_DIR.mkdir(parents=True, exist_ok=True)
+    for old_page in STATION_DIR.glob("*.html"):
+        old_page.unlink()
 
     page_paths: list[str] = []
     for station in stations:
@@ -723,7 +760,7 @@ def write_station_pages() -> list[str]:
         name = str(station.get("name") or "").strip()
         if not station_id or not name or not has_valid_coordinates(station):
             continue
-        page_path, page_html = build_station_page(station, corrections)
+        page_path, page_html = build_station_page(station, corrections, awards)
         target = ROOT / page_path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(page_html, encoding="utf-8")
@@ -748,16 +785,22 @@ def write_sitemap(page_paths: list[str]) -> None:
         lines.append(f"    <loc>{html.escape(absolute_url(path))}</loc>")
         lines.append("  </url>")
     lines.append("</urlset>")
-    SITEMAP_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    try:
+        SITEMAP_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    except PermissionError as exc:
+        print(f"Skipped {SITEMAP_PATH}: {exc}")
 
 
 def write_robots() -> None:
-    ROBOTS_PATH.write_text(
-        "User-agent: *\n"
-        "Allow: /\n\n"
-        f"Sitemap: {absolute_url('sitemap.xml')}\n",
-        encoding="utf-8",
-    )
+    try:
+        ROBOTS_PATH.write_text(
+            "User-agent: *\n"
+            "Allow: /\n\n"
+            f"Sitemap: {absolute_url('sitemap.xml')}\n",
+            encoding="utf-8",
+        )
+    except PermissionError as exc:
+        print(f"Skipped {ROBOTS_PATH}: {exc}")
 
 
 def main() -> None:

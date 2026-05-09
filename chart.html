@@ -170,6 +170,7 @@
     </nav>
 
     <script src="app-stats.js"></script>
+    <script src="customer-awards.js?v=20260504-awards"></script>
     <script>
       const params = new URLSearchParams(window.location.search);
       const isEmbeddedHeatmap = params.get("embed") === "1";
@@ -213,6 +214,15 @@
         fill: "rgba(37, 99, 235, 0.2)",
         stroke: "#2563eb",
       };
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
       const HISTORY_COLOR = {
         stroke: "#0f766e",
         fill: "rgba(15, 118, 110, 0.16)",
@@ -463,7 +473,15 @@
       let activeLocationOptionIndex = -1;
 
       const title = `${name} · ${fuel.toUpperCase()}`;
-      document.getElementById("chart-title").textContent = title;
+      const chartTitleEl = document.getElementById("chart-title");
+      chartTitleEl.textContent = title;
+      window.TankzeitCustomerAwards?.loadAwards().then(() => {
+        const badge =
+          window.TankzeitCustomerAwards?.badgeForStation(stationId) || "";
+        if (badge) {
+          chartTitleEl.innerHTML = `<span class="station-name-with-award"><span>${escapeHtml(title)}</span>${badge}</span>`;
+        }
+      });
       document.getElementById("chart-sub").textContent = "Lade Chart...";
 
       if (lat && lng) {
