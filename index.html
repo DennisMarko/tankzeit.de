@@ -443,6 +443,15 @@
         return `chart.html?id=${stationId}&fuel=${FUEL}&name=${encodeURIComponent(stationName)}&lat=${lat}&lng=${lng}`;
       }
 
+      function stationDetailUrl(stationId) {
+        return `station/${stationId}.html`;
+      }
+
+      function formatDistanceKm(distance) {
+        const value = Number(distance);
+        return Number.isFinite(value) ? `${value.toFixed(1)} km` : "-";
+      }
+
       function setStatus(message, type = "info") {
         statusEl.textContent = message;
         statusEl.className = `status ${type === "error" ? "error" : ""}`;
@@ -794,17 +803,17 @@
         stationsEl.innerHTML = limited
           .map((s) => {
             const isSaved = ids.includes(s.id);
-            const mapsHref = hrefForHtml(mapsUrl(s.lat, s.lng));
-            const detailsHref = hrefForHtml(
+            const stationDetailsHref = hrefForHtml(stationDetailUrl(s.id));
+            const priceHistoryHref = hrefForHtml(
               chartUrl(s.id, s.name, s.lat, s.lng),
             );
             return `
             <tr id="${s.id}">
-              <td><button class="fav" data-id="${s.id}" ${isSaved ? "disabled" : ""}>${isSaved ? "❤️" : "🤍"}</button></td>
-              <td data-label="Name"><a href="${mapsHref}" target="_blank" rel="noopener">${formatStationName(s)}</a></td>
+              <td class="station-favorite-cell"><button class="fav" data-id="${s.id}" ${isSaved ? "disabled" : ""}>${isSaved ? "❤️" : "🤍"}</button></td>
+              <td data-label="Name"><a href="${stationDetailsHref}">${formatStationName(s)}</a></td>
               <td data-label="Tankzeit" id="${s.id}-minimum">-</td>
               <td data-label="Preis €/l">${livePricesAvailable ? `${s[FUEL]} €/l` : NO_LIVE_PRICE_TEXT}</td>
-              <td data-label="Preisverlauf" id="${s.id}-profile"><a href="${detailsHref}">Details</a></td>
+              <td data-label="Preisverlauf" id="${s.id}-profile"><a href="${priceHistoryHref}">Details</a></td>
               <td data-label="Entfernung" class="distance-cell">${distanceAnimationHtml(s.dist, visibleDistanceRange)}</td>
             </tr>
           `;
@@ -831,10 +840,10 @@
             const stats = await fetchJson(statsUrl);
             const profileEl = document.getElementById(`${s.id}-profile`);
             const minimumEl = document.getElementById(`${s.id}-minimum`);
-            const detailsHref = hrefForHtml(
+            const priceHistoryHref = hrefForHtml(
               chartUrl(s.id, s.name, s.lat, s.lng),
             );
-            profileEl.innerHTML = `<a href="${detailsHref}">${escapeHtml(TankzeitStats.profileText(stats, "Details"))}</a>`;
+            profileEl.innerHTML = `<a href="${priceHistoryHref}">${escapeHtml(TankzeitStats.profileText(stats, "Details"))}</a>`;
             minimumEl.textContent = TankzeitStats.relativeMinimumText(
               stats,
               stats.text || "-",
