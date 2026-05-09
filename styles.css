@@ -86,18 +86,24 @@ body {
 header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
 .header-filters {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: max-content minmax(430px, 1fr) max-content max-content;
+  align-items: stretch;
+  justify-content: end;
   gap: 10px;
-  flex-wrap: wrap;
+  flex: 1 1 760px;
+}
+
+.brand {
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 .brand h1 {
@@ -128,6 +134,7 @@ header {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  min-height: 48px;
   padding: 10px 14px;
   border-radius: 999px;
   background: var(--card-glass);
@@ -162,6 +169,7 @@ header {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  max-width: 170px;
 }
 
 .filter-chip select:focus {
@@ -181,24 +189,28 @@ header {
 }
 
 .location-filter {
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto minmax(260px, 1fr) auto;
+  align-items: start;
   border-radius: 24px;
+  min-width: 0;
 }
 
 .location-filter-fields {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(132px, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .location-field {
   display: grid;
   gap: 4px;
-  min-width: 132px;
+  min-width: 0;
 }
 
 .location-field input {
-  width: 150px;
+  width: 100%;
   border: none;
   border-radius: 999px;
   background: rgba(128, 128, 128, 0.1);
@@ -232,8 +244,8 @@ header {
 }
 
 .diesel-heatmap-toggle {
-  align-self: flex-start;
-  margin-left: auto;
+  align-self: stretch;
+  min-height: 48px;
 }
 
 .diesel-heatmap-view {
@@ -278,8 +290,14 @@ header {
   .location-field input {
     width: 100%;
   }
+  .header-filters {
+    grid-template-columns: 1fr;
+  }
+  .location-filter {
+    grid-template-columns: 1fr;
+  }
   .diesel-heatmap-toggle {
-    margin-left: 0;
+    justify-self: stretch;
   }
   .diesel-heatmap-toolbar {
     align-items: stretch;

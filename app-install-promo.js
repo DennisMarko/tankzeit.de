@@ -79,6 +79,7 @@
 
   function buildPromo() {
     if (document.getElementById(PROMO_ID)) return;
+    if (document.body.classList.contains("chart-embed")) return;
 
     const container = rootContainer();
     if (!container) return;

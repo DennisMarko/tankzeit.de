@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
@@ -19,7 +19,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta
       name="description"
-      content="Finde die beste Zeit für E10. Tankzeit analysiert aktuelle Preismuster der Tankstellen in deiner Nähe und zeigt dir, wann du Geld sparen kannst."
+      content="Finde die beste Zeit fÃ¼r E10. Tankzeit analysiert aktuelle Preismuster der Tankstellen in deiner NÃ¤he und zeigt dir, wann du Geld sparen kannst."
     />
     <link rel="canonical" href="https://tankzeit.de/e10.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -31,11 +31,11 @@
     <meta property="og:site_name" content="tankzeit.de" />
     <meta
       property="og:title"
-      content="Tankzeit | Beste Tankzeiten für E10"
+      content="Tankzeit | Beste Tankzeiten fÃ¼r E10"
     />
     <meta
       property="og:description"
-      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen günstigen Zeitfenstern."
+      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen gÃ¼nstigen Zeitfenstern."
     />
     <meta property="og:url" content="https://tankzeit.de/e10.html" />
     <meta property="og:image" content="https://tankzeit.de/img/social-card.png" />
@@ -44,23 +44,23 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten für Diesel, E10 und E5"
+      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten fÃ¼r Diesel, E10 und E5"
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Tankzeit | Beste Tankzeiten für E10"
+      content="Tankzeit | Beste Tankzeiten fÃ¼r E10"
     />
     <meta
       name="twitter:description"
-      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen günstigen Zeitfenstern."
+      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen gÃ¼nstigen Zeitfenstern."
     />
     <meta name="twitter:image" content="https://tankzeit.de/img/social-card.png" />
     <meta
       name="twitter:image:alt"
-      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten für Diesel, E10 und E5"
+      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten fÃ¼r Diesel, E10 und E5"
     />
-    <title>Tankzeit.de: Beste Zeit für E10 finden und Geld sparen</title>
+    <title>Tankzeit.de: Beste Zeit fÃ¼r E10 finden und Geld sparen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="styles.css?v=20260409-app-promo-v18" as="style" />
@@ -116,12 +116,12 @@
         <div class="brand">
           <h1>Tankzeit</h1>
           <p>
-            Finde die beste Zeit für E10. Wir analysieren aktuelle Preismuster
-            der Tankstellen in deiner Nähe und zeigen dir, wann du Geld sparen
+            Finde die beste Zeit fÃ¼r E10. Wir analysieren aktuelle Preismuster
+            der Tankstellen in deiner NÃ¤he und zeigen dir, wann du Geld sparen
             kannst.
           </p>
         </div>
-        <div class="header-controls">
+        <div class="header-filters">
           <label class="filter-chip" for="sort-mode">
             <span class="filter-chip-label">
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -134,22 +134,83 @@
               <option value="price">Preis</option>
             </select>
           </label>
+          <div class="filter-chip location-filter" aria-labelledby="location-filter-label">
+            <span class="filter-chip-label" id="location-filter-label">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21s7-5.15 7-11a7 7 0 1 0-14 0c0 5.85 7 11 7 11z" />
+                <circle cx="12" cy="10" r="2.4" />
+              </svg>
+              Standort
+            </span>
+            <div class="location-filter-fields">
+              <label class="location-field" for="manual-location-place">
+                <span class="sr-only">Postleitzahl oder Ort</span>
+                <input
+                  id="manual-location-place"
+                  type="text"
+                  autocomplete="postal-code address-level2"
+                  placeholder="PLZ oder Ort"
+                  aria-describedby="manual-location-place-error"
+                />
+                <span
+                  class="field-error"
+                  id="manual-location-place-error"
+                  aria-live="polite"
+                ></span>
+              </label>
+              <label class="location-field" for="manual-location-address">
+                <span class="sr-only">Adresse</span>
+                <input
+                  id="manual-location-address"
+                  type="text"
+                  autocomplete="street-address"
+                  placeholder="Stra&szlig;e + Nr."
+                  aria-describedby="manual-location-address-error"
+                />
+                <span
+                  class="field-error"
+                  id="manual-location-address-error"
+                  aria-live="polite"
+                ></span>
+              </label>
+            </div>
+            <button class="btn location-apply-btn" id="manual-location-apply" type="button">
+              &Uuml;bernehmen
+            </button>
+          </div>
+          <button class="btn diesel-heatmap-toggle" id="diesel-heatmap-toggle" type="button">
+            Heatmap
+          </button>
           <label class="filter-chip" for="award-filter">
             <span class="filter-chip-label">Filter</span>
             <select id="award-filter" aria-label="Nach Auszeichnung filtern">
               <option value="all">Alle</option>
-              <option value="bronze">★ Bronze+</option>
-              <option value="silver">★ Silber+</option>
-              <option value="gold">★ Gold</option>
+              <option value="bronze">â˜… Bronze+</option>
+              <option value="silver">â˜… Silber+</option>
+              <option value="gold">â˜… Gold</option>
             </select>
           </label>
         </div>
       </header>
 
+      <section class="diesel-heatmap-view" id="diesel-heatmap-view" hidden>
+        <div class="diesel-heatmap-toolbar">
+          <h2>E10 Heatmap</h2>
+          <button class="btn" id="diesel-table-toggle" type="button">
+            Zur&uuml;ck zur Tabelle
+          </button>
+        </div>
+        <iframe
+          class="diesel-heatmap-frame"
+          id="diesel-heatmap-frame"
+          title="E10 Heatmap"
+        ></iframe>
+      </section>
+
       <section class="hero" id="location-hint">
         <div class="tip">
           <strong>Hinweis:</strong> Bitte Standortzugriff erlauben, damit wir
-          Tankstellen in deiner Nähe finden.
+          Tankstellen in deiner NÃ¤he finden.
         </div>
         <div class="tip">
           Falls der automatische Abruf nicht klappt, kannst du den Button als
@@ -162,34 +223,23 @@
         </div>
       </section>
 
-      <section class="card savings-teaser">
-        <div>
-          <p class="savings-kicker">Neu</p>
-          <h2>Sparpotenzial Rechner</h2>
-          <p>
-            Verbrauch eintragen und die günstigsten Tage, Uhrzeiten und
-            Stationen in deiner Nähe finden.
-          </p>
-        </div>
-        <a class="link-btn" href="sparrechner.html">Sparpotenzial berechnen</a>
-      </section>
-
       <div id="status" class="status"></div>
 
-      <section class="card">
+      <section class="card" id="diesel-table-card">
         <table class="table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th id="price-heading">Preis €/l</th>
-              <th>Mittagspreis/Vortag</th>
-              <th>Tankzeit</th>
               <th></th>
+              <th>Name</th>
+              <th>Tankzeit</th>
+              <th id="price-heading">Preis €/l</th>
+              <th>Preisverlauf</th>
+              <th class="distance-heading">Entfernung</th>
             </tr>
           </thead>
           <tbody id="stations">
             <tr>
-              <td colspan="5">Wir laden die Daten...</td>
+              <td colspan="6">Wir laden die Daten...</td>
             </tr>
           </tbody>
         </table>
@@ -247,16 +297,17 @@
     </nav>
 
     <script src="app-stats.js"></script>
-    <script src="station-catalog.js?v=20260504-clean-fallback"></script>
+    <script src="station-catalog.js"></script>
+    <script src="station-geocoder.js"></script>
     <script src="customer-awards.js?v=20260504-awards"></script>
     <script>
       const DATA_BASE = "data2/";
       const FUEL = "e10";
       const TANKERKOENIG_APOLOGY =
-        "Entschuldigung, Tankerkönig ist derzeit nicht erreichbar. Bitte versuche es später erneut.";
-      const NO_LIVE_PRICE_TEXT = "Livepreis nicht verfügbar";
+        "Entschuldigung, TankerkÃ¶nig ist derzeit nicht erreichbar. Bitte versuche es spÃ¤ter erneut.";
+      const NO_LIVE_PRICE_TEXT = "Livepreis nicht verfÃ¼gbar";
       const FALLBACK_STATUS_MESSAGE =
-        "Livepreise sind derzeit nicht verfügbar. Wir zeigen nahe Tankstellen aus dem lokalen Verzeichnis.";
+        "Livepreise sind derzeit nicht verfÃ¼gbar. Wir zeigen nahe Tankstellen aus dem lokalen Verzeichnis.";
       const SEARCH_RADIUS_KM = 10;
       const PAGE_PARAMS = new URLSearchParams(window.location.search);
       const FORCE_LOCAL_STATIONS = PAGE_PARAMS.get("debugLocal") === "1";
@@ -265,8 +316,30 @@
       const statusEl = document.getElementById("status");
       const stationsEl = document.getElementById("stations");
       const sortModeEl = document.getElementById("sort-mode");
+      const headerFiltersEl = document.querySelector(".header-filters");
+      const locationHintEl = document.getElementById("location-hint");
+      const dieselTableCardEl = document.getElementById("diesel-table-card");
+      const dieselHeatmapViewEl = document.getElementById("diesel-heatmap-view");
+      const dieselHeatmapFrameEl = document.getElementById("diesel-heatmap-frame");
+      const dieselHeatmapToggleEl = document.getElementById("diesel-heatmap-toggle");
+      const dieselTableToggleEl = document.getElementById("diesel-table-toggle");
       const awardFilterEl = document.getElementById("award-filter");
       const locationRequestBtn = document.getElementById("location-request-btn");
+      const manualLocationPlaceEl = document.getElementById(
+        "manual-location-place",
+      );
+      const manualLocationAddressEl = document.getElementById(
+        "manual-location-address",
+      );
+      const manualLocationApplyBtn = document.getElementById(
+        "manual-location-apply",
+      );
+      const manualLocationPlaceErrorEl = document.getElementById(
+        "manual-location-place-error",
+      );
+      const manualLocationAddressErrorEl = document.getElementById(
+        "manual-location-address-error",
+      );
       const priceHeadingEl = document.getElementById("price-heading");
       const ids = JSON.parse(localStorage.getItem("ids")) || [];
       const fav = JSON.parse(localStorage.getItem("fav")) || [];
@@ -275,12 +348,32 @@
       const AWARD_TIER_RANKS = { bronze: 1, silver: 2, gold: 3 };
       const LOCATION_OPTIONS = { enableHighAccuracy: false, maximumAge: 300000 };
       const LOCATION_DEADLINE_MS = 25000;
+      const DIESEL_HEATMAP_URL =
+        "chart.html?fuel=e10&name=E10&view=heatmap&embed=1";
       let currentCenter = null;
       let livePricesAvailable = true;
       let locationWatchId = null;
       let locationDeadlineId = null;
 
       sortModeEl.value = localStorage.getItem(SORT_STORAGE_KEY) || "distance";
+      function setDieselHeatmapMode(isHeatmap) {
+        if (headerFiltersEl) headerFiltersEl.hidden = isHeatmap;
+        if (locationHintEl) locationHintEl.hidden = isHeatmap;
+        if (statusEl) statusEl.hidden = isHeatmap;
+        if (dieselTableCardEl) dieselTableCardEl.hidden = isHeatmap;
+        if (dieselHeatmapViewEl) dieselHeatmapViewEl.hidden = !isHeatmap;
+        if (isHeatmap && dieselHeatmapFrameEl && !dieselHeatmapFrameEl.src) {
+          dieselHeatmapFrameEl.src = DIESEL_HEATMAP_URL;
+        }
+      }
+
+      dieselHeatmapToggleEl?.addEventListener("click", () => {
+        setDieselHeatmapMode(true);
+      });
+      dieselTableToggleEl?.addEventListener("click", () => {
+        setDieselHeatmapMode(false);
+      });
+
       awardFilterEl.value =
         localStorage.getItem(AWARD_FILTER_STORAGE_KEY) || "all";
       sortModeEl.addEventListener("change", () => {
@@ -367,7 +460,7 @@
           localStorage.setItem(SORT_STORAGE_KEY, "distance");
         }
         if (priceHeadingEl) {
-          priceHeadingEl.textContent = isAvailable ? "Preis €/l" : "Livepreis";
+          priceHeadingEl.textContent = isAvailable ? "Preis â‚¬/l" : "Livepreis";
         }
       }
 
@@ -388,6 +481,32 @@
           : "Standort abrufen";
       }
 
+      function setManualLocationBusy(isBusy) {
+        if (!manualLocationApplyBtn) return;
+        manualLocationApplyBtn.disabled = isBusy;
+        manualLocationApplyBtn.textContent = isBusy
+          ? "Wird gesucht..."
+          : "\u00dcbernehmen";
+      }
+
+      function clearManualLocationErrors() {
+        manualLocationPlaceErrorEl.textContent = "";
+        manualLocationAddressErrorEl.textContent = "";
+        manualLocationPlaceEl.removeAttribute("aria-invalid");
+        manualLocationAddressEl.removeAttribute("aria-invalid");
+      }
+
+      function setManualLocationError(field, message) {
+        const inputEl =
+          field === "address" ? manualLocationAddressEl : manualLocationPlaceEl;
+        const errorEl =
+          field === "address"
+            ? manualLocationAddressErrorEl
+            : manualLocationPlaceErrorEl;
+        errorEl.textContent = message;
+        inputEl.setAttribute("aria-invalid", "true");
+      }
+
       function geoError(err) {
         clearLocationRequest();
         setLocationButtonBusy(false);
@@ -401,12 +520,12 @@
             "Standortzugriff wurde verweigert. Bitte Browser-Freigabe aktivieren.";
         if (err && err.code === 2)
           message =
-            "Standort ist aktuell nicht verfügbar. Das ist oft nur vorübergehend, wenn GPS, WLAN oder Browser-Standortdienste noch nicht bereit sind.";
+            "Standort ist aktuell nicht verfÃ¼gbar. Das ist oft nur vorÃ¼bergehend, wenn GPS, WLAN oder Browser-Standortdienste noch nicht bereit sind.";
         if (err && err.code === 3)
           message =
             "Standortabfrage ist abgelaufen. Bitte erneut versuchen.";
         setStatus(
-          `${message} Bitte versuche es erneut über den Standort-Button.`,
+          `${message} Bitte versuche es erneut Ã¼ber den Standort-Button.`,
           "error",
         );
       }
@@ -451,7 +570,7 @@
               return;
             }
             setStatus(
-              "Standort wird noch ermittelt. Das kann beim ersten Abruf etwas länger dauern.",
+              "Standort wird noch ermittelt. Das kann beim ersten Abruf etwas lÃ¤nger dauern.",
             );
           },
           LOCATION_OPTIONS,
@@ -459,6 +578,52 @@
         locationDeadlineId = window.setTimeout(() => {
           geoError({ code: 3, message: "Location request deadline exceeded." });
         }, LOCATION_DEADLINE_MS);
+      }
+
+      async function applyManualLocation() {
+        const place = manualLocationPlaceEl.value.trim();
+        const address = manualLocationAddressEl.value.trim();
+
+        clearManualLocationErrors();
+        manualLocationPlaceEl.value = place;
+        manualLocationAddressEl.value = address;
+
+        if (!place) {
+          setManualLocationError(
+            "place",
+            "Bitte Postleitzahl oder Ort eingeben.",
+          );
+          return;
+        }
+
+        setManualLocationBusy(true);
+        try {
+          const result = await TankzeitStationGeocoder.resolveLocation(
+            place,
+            address,
+          );
+          if (!result.ok) {
+            setManualLocationError(
+              result.field,
+              "Standort nicht gefunden. Bitte Eingabe pruefen.",
+            );
+            return;
+          }
+
+          clearLocationRequest();
+          setLocationButtonBusy(false);
+          const hint = document.getElementById("location-hint");
+          if (hint) hint.style.display = "none";
+          loadStations(result.lat, result.lng);
+        } catch (err) {
+          console.warn("Manual location lookup failed", err);
+          setManualLocationError(
+            "place",
+            "Standort nicht gefunden. Bitte Eingabe pruefen.",
+          );
+        } finally {
+          setManualLocationBusy(false);
+        }
       }
 
       function isTankerkoenigRequest(url) {
@@ -545,6 +710,62 @@
         });
       }
 
+      function formatDistance(distanceKm) {
+        const distance = Number(distanceKm);
+        if (!Number.isFinite(distance)) return "-";
+        return `${distance.toFixed(1).replace(".", ",")} km`;
+      }
+
+      function distanceRange(stations) {
+        const distances = stations
+          .map((station) => Number(station.dist))
+          .filter(Number.isFinite);
+        if (!distances.length) {
+          return { min: null, max: null };
+        }
+        return {
+          min: Math.min(...distances),
+          max: Math.max(...distances),
+        };
+      }
+
+      function distancePositionRatio(distanceKm, range) {
+        const distance = Number(distanceKm);
+        if (
+          !Number.isFinite(distance) ||
+          !range ||
+          !Number.isFinite(range.min) ||
+          !Number.isFinite(range.max) ||
+          range.max <= range.min
+        ) {
+          return 1;
+        }
+        const ratio = (distance - range.min) / (range.max - range.min);
+        return Math.max(0, Math.min(1, 1 - ratio));
+      }
+
+      function distanceAnimationHtml(distanceKm, range) {
+        const label = formatDistance(distanceKm);
+        const position = distancePositionRatio(distanceKm, range).toFixed(4);
+        return `
+          <div class="distance-drive" style="--distance-ratio: ${position};" aria-label="Entfernung ${escapeHtml(label)}">
+            <div class="distance-road" aria-hidden="true"></div>
+            <div class="distance-flag" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="distance-car-wrap">
+              <span class="distance-label">${escapeHtml(label)}</span>
+              <svg class="distance-car" viewBox="0 0 64 32" aria-hidden="true">
+                <path d="M8 20h5l5-8h22l8 8h8a4 4 0 0 1 4 4v2H4v-2a4 4 0 0 1 4-4z" />
+                <circle cx="18" cy="26" r="4" />
+                <circle cx="48" cy="26" r="4" />
+                <path d="M22 13h8v7H18l4-7zM33 13h6l6 7H33v-7z" />
+              </svg>
+            </div>
+          </div>
+        `;
+      }
+
       async function loadFallbackStations(lat, lng) {
         const catalog = await TankzeitStationCatalog.loadCatalog();
         return TankzeitStationCatalog.findNearbyStations(catalog, lat, lng, {
@@ -560,11 +781,12 @@
           const message =
             awardFilterEl.value === "all"
               ? "Keine Stationen im Umkreis gefunden."
-              : "keine Treffer für diese Auswahl gefunden";
-          stationsEl.innerHTML = `<tr><td colspan='5'>${message}</td></tr>`;
+              : "Keine Treffer fuer diese Auswahl gefunden.";
+          stationsEl.innerHTML = `<tr><td colspan='6'>${message}</td></tr>`;
           return;
         }
         const limited = filteredStations.slice(0, 10);
+        const visibleDistanceRange = distanceRange(limited);
         stationsEl.innerHTML = limited
           .map((s) => {
             const isSaved = ids.includes(s.id);
@@ -574,11 +796,12 @@
             );
             return `
             <tr id="${s.id}">
+              <td><button class="fav" data-id="${s.id}" ${isSaved ? "disabled" : ""}>${isSaved ? "&#10084;" : "&#9825;"}</button></td>
               <td data-label="Name"><a href="${mapsHref}" target="_blank" rel="noopener">${formatStationName(s)}</a></td>
-              <td data-label="Preis">${livePricesAvailable ? `${s[FUEL]} €/l` : NO_LIVE_PRICE_TEXT}</td>
-              <td data-label="Mittagspreis/Vortag" id="${s.id}-profile"><a href="${detailsHref}">Details</a></td>
               <td data-label="Tankzeit" id="${s.id}-minimum">-</td>
-              <td><button class="fav" data-id="${s.id}" ${isSaved ? "disabled" : ""}>${isSaved ? "❤️" : "🤍"}</button></td>
+              <td data-label="Preis €/l">${livePricesAvailable ? `${s[FUEL]} €/l` : NO_LIVE_PRICE_TEXT}</td>
+              <td data-label="Preisverlauf" id="${s.id}-profile"><a href="${detailsHref}">Details</a></td>
+              <td data-label="Entfernung" class="distance-cell">${distanceAnimationHtml(s.dist, visibleDistanceRange)}</td>
             </tr>
           `;
           })
@@ -593,13 +816,12 @@
               station.lat,
               station.lng,
             );
-            btn.textContent = "❤️";
+            btn.textContent = "❤";
             btn.disabled = true;
           });
         });
 
-        await Promise.allSettled(
-          limited.map(async (s) => {
+        await Promise.allSettled(limited.map(async (s) => {
             const statsUrl = `${DATA_BASE}${s.id.split("-").join("/")}/${FUEL}.json`;
             const stats = await fetchJson(statsUrl);
             const detailsHref = hrefForHtml(
@@ -624,7 +846,7 @@
           );
           if (!fallbackStations.length) {
             stationsEl.innerHTML =
-              "<tr><td colspan='5'>Keine Stationen im Umkreis gefunden.</td></tr>";
+              "<tr><td colspan='6'>Keine Stationen im Umkreis gefunden.</td></tr>";
             setStatus(
               "Im lokalen Verzeichnis wurden keine Stationen im Umkreis gefunden.",
             );
@@ -643,7 +865,7 @@
           );
           if (!stations.length) {
             stationsEl.innerHTML =
-              "<tr><td colspan='5'>Keine offenen Stationen gefunden.</td></tr>";
+              "<tr><td colspan='6'>Keine offenen Stationen gefunden.</td></tr>";
             setStatus("Keine Stationen im Umkreis.");
             return;
           }
@@ -658,9 +880,9 @@
               );
               if (!fallbackStations.length) {
                 stationsEl.innerHTML =
-                  "<tr><td colspan='5'>Keine Stationen im Umkreis gefunden.</td></tr>";
+                  "<tr><td colspan='6'>Keine Stationen im Umkreis gefunden.</td></tr>";
                 setStatus(
-                  "Livepreise sind derzeit nicht verfügbar. Im lokalen Verzeichnis wurden keine Stationen im Umkreis gefunden.",
+                  "Livepreise sind derzeit nicht verfÃ¼gbar. Im lokalen Verzeichnis wurden keine Stationen im Umkreis gefunden.",
                 );
                 return;
               }
@@ -670,17 +892,17 @@
             } catch (fallbackErr) {
               console.warn("Local station fallback failed", fallbackErr);
               stationsEl.innerHTML =
-                "<tr><td colspan='5'>Livepreise und lokales Stationsverzeichnis sind derzeit nicht verfügbar.</td></tr>";
+                "<tr><td colspan='6'>Livepreise und lokales Stationsverzeichnis sind derzeit nicht verfÃ¼gbar.</td></tr>";
               setStatus(
-                "Livepreise sind derzeit nicht verfügbar und das lokale Stationsverzeichnis konnte nicht geladen werden.",
+                "Livepreise sind derzeit nicht verfÃ¼gbar und das lokale Stationsverzeichnis konnte nicht geladen werden.",
                 "error",
               );
               return;
             }
           }
           const message =
-            "Fehler beim Laden der Daten. Bitte später erneut versuchen.";
-          stationsEl.innerHTML = `<tr><td colspan='5'>${message}</td></tr>`;
+            "Fehler beim Laden der Daten. Bitte spÃ¤ter erneut versuchen.";
+          stationsEl.innerHTML = `<tr><td colspan='6'>${message}</td></tr>`;
           setStatus(message, "error");
         }
       }
@@ -708,6 +930,7 @@
       setLivePriceAvailability(true);
       preserveNavigationParams();
       locationRequestBtn.addEventListener("click", requestLocation);
+      manualLocationApplyBtn.addEventListener("click", applyManualLocation);
       if (!loadLocationFromUrl()) {
         requestLocation();
       }
