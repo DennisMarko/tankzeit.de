@@ -19,7 +19,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta
       name="description"
-      content="Finde die beste Zeit fÃ¼r E10. Tankzeit analysiert aktuelle Preismuster der Tankstellen in deiner NÃ¤he und zeigt dir, wann du Geld sparen kannst."
+      content="Finde die beste Zeit für E10. Tankzeit analysiert aktuelle Preismuster der Tankstellen in deiner Nähe und zeigt dir, wann du Geld sparen kannst."
     />
     <link rel="canonical" href="https://tankzeit.de/e10.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -31,11 +31,11 @@
     <meta property="og:site_name" content="tankzeit.de" />
     <meta
       property="og:title"
-      content="Tankzeit | Beste Tankzeiten fÃ¼r E10"
+      content="Tankzeit | Beste Tankzeiten für E10"
     />
     <meta
       property="og:description"
-      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen gÃ¼nstigen Zeitfenstern."
+      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen günstigen Zeitfenstern."
     />
     <meta property="og:url" content="https://tankzeit.de/e10.html" />
     <meta property="og:image" content="https://tankzeit.de/img/social-card.png" />
@@ -44,23 +44,23 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten fÃ¼r Diesel, E10 und E5"
+      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten für Diesel, E10 und E5"
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Tankzeit | Beste Tankzeiten fÃ¼r E10"
+      content="Tankzeit | Beste Tankzeiten für E10"
     />
     <meta
       name="twitter:description"
-      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen gÃ¼nstigen Zeitfenstern."
+      content="Historische E10-Preisprofile deutscher Tankstellen mit Direktlinks zu den Charts und typischen günstigen Zeitfenstern."
     />
     <meta name="twitter:image" content="https://tankzeit.de/img/social-card.png" />
     <meta
       name="twitter:image:alt"
-      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten fÃ¼r Diesel, E10 und E5"
+      content="Tankzeit Vorschaugrafik mit Logo und Hinweis auf beste Tankzeiten für Diesel, E10 und E5"
     />
-    <title>Tankzeit.de: Beste Zeit fÃ¼r E10 finden und Geld sparen</title>
+    <title>Tankzeit.de: Beste Zeit für E10 finden und Geld sparen</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="styles.css?v=20260409-app-promo-v18" as="style" />
@@ -116,8 +116,8 @@
         <div class="brand">
           <h1>Tankzeit</h1>
           <p>
-            Finde die beste Zeit fÃ¼r E10. Wir analysieren aktuelle Preismuster
-            der Tankstellen in deiner NÃ¤he und zeigen dir, wann du Geld sparen
+            Finde die beste Zeit für E10. Wir analysieren aktuelle Preismuster
+            der Tankstellen in deiner Nähe und zeigen dir, wann du Geld sparen
             kannst.
           </p>
         </div>
@@ -185,9 +185,9 @@
             <span class="filter-chip-label">Filter</span>
             <select id="award-filter" aria-label="Nach Auszeichnung filtern">
               <option value="all">Alle</option>
-              <option value="bronze">â˜… Bronze+</option>
-              <option value="silver">â˜… Silber+</option>
-              <option value="gold">â˜… Gold</option>
+              <option value="bronze">&#9733; Bronze+</option>
+              <option value="silver">&#9733; Silber+</option>
+              <option value="gold">&#9733; Gold</option>
             </select>
           </label>
         </div>
@@ -210,7 +210,7 @@
       <section class="hero" id="location-hint">
         <div class="tip">
           <strong>Hinweis:</strong> Bitte Standortzugriff erlauben, damit wir
-          Tankstellen in deiner NÃ¤he finden.
+          Tankstellen in deiner Nähe finden.
         </div>
         <div class="tip">
           Falls der automatische Abruf nicht klappt, kannst du den Button als
@@ -304,10 +304,10 @@
       const DATA_BASE = "data2/";
       const FUEL = "e10";
       const TANKERKOENIG_APOLOGY =
-        "Entschuldigung, TankerkÃ¶nig ist derzeit nicht erreichbar. Bitte versuche es spÃ¤ter erneut.";
-      const NO_LIVE_PRICE_TEXT = "Livepreis nicht verfÃ¼gbar";
+        "Entschuldigung, Tankerkönig ist derzeit nicht erreichbar. Bitte versuche es später erneut.";
+      const NO_LIVE_PRICE_TEXT = "Livepreis nicht verfügbar";
       const FALLBACK_STATUS_MESSAGE =
-        "Livepreise sind derzeit nicht verfÃ¼gbar. Wir zeigen nahe Tankstellen aus dem lokalen Verzeichnis.";
+        "Livepreise sind derzeit nicht verfügbar. Wir zeigen nahe Tankstellen aus dem lokalen Verzeichnis.";
       const SEARCH_RADIUS_KM = 10;
       const PAGE_PARAMS = new URLSearchParams(window.location.search);
       const FORCE_LOCAL_STATIONS = PAGE_PARAMS.get("debugLocal") === "1";
@@ -469,7 +469,7 @@
           localStorage.setItem(SORT_STORAGE_KEY, "distance");
         }
         if (priceHeadingEl) {
-          priceHeadingEl.textContent = isAvailable ? "Preis â‚¬/l" : "Livepreis";
+          priceHeadingEl.textContent = isAvailable ? "Preis €/l" : "Livepreis";
         }
       }
 
@@ -529,12 +529,12 @@
             "Standortzugriff wurde verweigert. Bitte Browser-Freigabe aktivieren.";
         if (err && err.code === 2)
           message =
-            "Standort ist aktuell nicht verfÃ¼gbar. Das ist oft nur vorÃ¼bergehend, wenn GPS, WLAN oder Browser-Standortdienste noch nicht bereit sind.";
+            "Standort ist aktuell nicht verfügbar. Das ist oft nur vorübergehend, wenn GPS, WLAN oder Browser-Standortdienste noch nicht bereit sind.";
         if (err && err.code === 3)
           message =
             "Standortabfrage ist abgelaufen. Bitte erneut versuchen.";
         setStatus(
-          `${message} Bitte versuche es erneut Ã¼ber den Standort-Button.`,
+          `${message} Bitte versuche es erneut über den Standort-Button.`,
           "error",
         );
       }
@@ -579,7 +579,7 @@
               return;
             }
             setStatus(
-              "Standort wird noch ermittelt. Das kann beim ersten Abruf etwas lÃ¤nger dauern.",
+              "Standort wird noch ermittelt. Das kann beim ersten Abruf etwas länger dauern.",
             );
           },
           LOCATION_OPTIONS,
@@ -891,7 +891,7 @@
                 stationsEl.innerHTML =
                   "<tr><td colspan='6'>Keine Stationen im Umkreis gefunden.</td></tr>";
                 setStatus(
-                  "Livepreise sind derzeit nicht verfÃ¼gbar. Im lokalen Verzeichnis wurden keine Stationen im Umkreis gefunden.",
+                  "Livepreise sind derzeit nicht verfügbar. Im lokalen Verzeichnis wurden keine Stationen im Umkreis gefunden.",
                 );
                 return;
               }
@@ -903,7 +903,7 @@
               stationsEl.innerHTML =
                 "<tr><td colspan='6'>Livepreise und lokales Stationsverzeichnis sind derzeit nicht verfügbar.</td></tr>";
               setStatus(
-                "Livepreise sind derzeit nicht verfÃ¼gbar und das lokale Stationsverzeichnis konnte nicht geladen werden.",
+                "Livepreise sind derzeit nicht verfügbar und das lokale Stationsverzeichnis konnte nicht geladen werden.",
                 "error",
               );
               return;
