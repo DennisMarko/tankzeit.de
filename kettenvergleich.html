@@ -133,58 +133,65 @@
         <div class="toolbar">
           <div class="left">
             <h2 id="weekly-title">Preisverlauf Montag bis Sonntag</h2>
-            <p class="control-hint">
-              Median der 12:00-Referenzpreise je Gruppe in der aktuellen Woche,
-              fehlende Folgetage als gestrichelte Prognose.
-            </p>
           </div>
         </div>
         <div class="chart-wrap">
           <canvas id="weekly-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Pro Tag wird der Median der 12:00-Referenzpreise für
+          Ketten und freie Tankstellen getrennt berechnet. Fehlende Folgetage
+          erscheinen als gestrichelte Prognose, die aktuelle Wochen stärker
+          gewichtet als ältere Daten.
+        </p>
       </section>
 
       <section class="card management-chart-card">
         <div class="toolbar">
           <div class="left">
             <h2 id="reference-title">12:00-Referenzpreis nach Gruppe</h2>
-            <p class="control-hint">
-              Preisverteilung von Ketten und freien Tankstellen am gewählten Tag.
-            </p>
           </div>
         </div>
         <div class="chart-wrap">
           <canvas id="reference-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Alle Stationen mit gültigem 12:00-Referenzpreis am
+          gewählten Tag werden in Ketten und freie Tankstellen aufgeteilt. Die
+          Grafik zeigt Median, Quartile und Preisspanne je Gruppe.
+        </p>
       </section>
 
       <section class="card management-chart-card">
         <div class="toolbar">
           <div class="left">
             <h2 id="delta-title">Preisänderung zu 12:00</h2>
-            <p class="control-hint">
-              Veränderung des 12:00-Medians gegenüber dem Vortag je Gruppe,
-              fehlende Folgetage als gestrichelte Prognose.
-            </p>
           </div>
         </div>
         <div class="chart-wrap">
           <canvas id="delta-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Verglichen wird der 12:00-Median jeder Gruppe mit
+          dem Vortag. Fehlende Folgetage werden als Prognose ergänzt, wobei die
+          Preisänderungen der letzten Wochen stärker berücksichtigt werden.
+        </p>
       </section>
 
       <section class="card management-chart-card">
         <div class="toolbar">
           <div class="left">
             <h2 id="histogram-title">Zeitpunkt der 12:00-Referenz</h2>
-            <p class="control-hint">
-              Wann der verwendete Referenzpreis laut Datenstand feststand.
-            </p>
           </div>
         </div>
         <div class="chart-wrap">
           <canvas id="histogram-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Gezählt wird, wann der verwendete Referenzpreis je
+          Station feststand. Die Balken unterscheiden Ketten und freie
+          Tankstellen für den ausgewählten Kraftstoff.
+        </p>
       </section>
 
       <section class="chain-grid">

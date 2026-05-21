@@ -187,6 +187,12 @@
         <div class="chart-wrap">
           <canvas id="weekly-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Pro Tag wird der Median des 12:00-Referenzpreises
+          aller verfügbaren Stationen für den gewählten Kraftstoff genutzt. Für
+          fehlende Tage wird eine gestrichelte Prognose berechnet, bei der die
+          letzten Wochen stärker zählen als ältere Daten.
+        </p>
       </section>
 
       <section class="card management-chart-card">
@@ -198,6 +204,11 @@
         <div class="chart-wrap">
           <canvas id="brand-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Jede Marke wird aus den Stationen gebildet, die am
+          gewählten Tag einen gültigen 12:00-Referenzpreis melden. Angezeigt
+          werden Median, Quartile und Preisspanne je Marke.
+        </p>
       </section>
 
       <section class="card management-chart-card">
@@ -210,6 +221,11 @@
         <div class="chart-wrap">
           <canvas id="plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Die Linie zeigt die Preisänderung relativ zur
+          12:00-Referenz. Vor 12:00 wird mit der Referenz des Vortags verglichen,
+          nach 12:00 mit der Referenz des gewählten Tages.
+        </p>
       </section>
 
       <section class="card management-chart-card">
@@ -222,6 +238,11 @@
         <div class="chart-wrap">
           <canvas id="histogram-plot"></canvas>
         </div>
+        <p class="chart-explanation">
+          Zusammensetzung: Das Histogramm zählt, zu welcher Uhrzeit der
+          verwendete 12:00-Referenzpreis pro Station feststand. Erhöhungen bis
+          12:15 zählen noch zur 12:00-Referenz, spätere Meldungen nicht.
+        </p>
       </section>
 
       <section class="card management-footer">

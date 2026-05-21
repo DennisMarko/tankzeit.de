@@ -625,11 +625,11 @@
       }
 
       function buildReferenceSubtitle() {
-        return `${fuel.toUpperCase()} · Preisänderung zur jeweiligen 12:00-Referenz · Grau = 00:00-11:59 ggü. Vortag 12:00 · Blau = 12:00-23:59 ggü. Tages-12:00 · negative Werte = günstiger, positive Werte = teurer`;
+        return `${fuel.toUpperCase()} · Zusammensetzung: Preisänderung zur jeweiligen 12:00-Referenz · Grau = 00:00-11:59 gegenüber Vortag 12:00 · Blau = 12:00-23:59 gegenüber Tages-12:00 · negative Werte = günstiger, positive Werte = teurer`;
       }
 
       function buildCycleSubtitle() {
-        return `${fuel.toUpperCase()} · Preisänderung zur ausgewählten 12:00-Referenz im Zyklus 12:00 Vortag → 12:00 Tag · Erhöhungen bis 12:15 zählen noch zum Noon-Anker, spätere nicht · Mitternacht markiert die Tagesgrenze`;
+        return `${fuel.toUpperCase()} · Zusammensetzung: Preisänderung im Zyklus 12:00 Vortag bis 12:00 Tag · Grundlage ist die ausgewählte 12:00-Referenz · Erhöhungen bis 12:15 zählen noch zum Noon-Anker, spätere nicht · Mitternacht markiert die Tagesgrenze`;
       }
 
       function sanitizeRelativeValue(valueInEuro) {
@@ -809,7 +809,7 @@
           `${formatHistoryDay(first)} - ${formatHistoryDay(last)}`,
           "Zeilen = Wochentage",
           "Spalten = Kalenderwochen",
-          "Farbe = Preisniveau",
+          "Farbe = Preisniveau des 12:00-Referenzpreises",
         ].join(" · ");
       }
 
@@ -823,7 +823,8 @@
           `${fuel.toUpperCase()} · Mittagspreise`,
           `${rows.length} Tage`,
           `${formatHistoryDay(first)} - ${formatHistoryDay(last)}`,
-          "y-Achse = etablierter Mittagspreis",
+          "Zusammensetzung: ein Punkt pro Tag aus dem etablierten Mittagspreis",
+          "y-Achse = 12:00-Referenzpreis",
         ].join(" · ");
       }
 
