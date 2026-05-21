@@ -371,6 +371,8 @@
         e10: "#ea580c",
         e5: "#7c2d12",
       };
+      const FORECAST_HISTORY_WEEKS = 8;
+      const FORECAST_RECENCY_DECAY = 0.72;
       const DARK_MODE_MEDIA_QUERY = window.matchMedia(
         "(prefers-color-scheme: dark)",
       );
@@ -422,6 +424,9 @@
         brandLayout: null,
         histogramLayout: null,
         weeklyRows: [],
+        weeklyForecastTrends: [],
+        weeklyRowsFuel: null,
+        weeklyRowsDate: null,
         weeklyLayout: null,
         chainComparison: null,
         date: null,
@@ -639,6 +644,21 @@
         return (
           finiteValues.reduce((sum, value) => sum + value, 0) /
           finiteValues.length
+        );
+      }
+
+      function weightedAverage(items) {
+        const validItems = items.filter(
+          (item) =>
+            Number.isFinite(item.value) &&
+            Number.isFinite(item.weight) &&
+            item.weight > 0,
+        );
+        if (!validItems.length) return null;
+        const weightSum = validItems.reduce((sum, item) => sum + item.weight, 0);
+        return (
+          validItems.reduce((sum, item) => sum + item.value * item.weight, 0) /
+          weightSum
         );
       }
 
@@ -1339,7 +1359,7 @@
         }).format(date);
       }
 
-      function forecastWeeklyRows(rows) {
+      function forecastWeeklyRows(rows, historicalTrends = []) {
         const projected = rows.map((row) => ({
           ...row,
           displayPrice: row.price,
@@ -1359,9 +1379,14 @@
             deltas.push((actualPrices[index] - actualPrices[index - 1]) / dayGap);
           }
         }
-        const dailyTrend = deltas.length ? average(deltas) : 0;
+        const currentWeekTrend = deltas.length ? average(deltas) : null;
         let previousPrice = projected[lastActualIndex].price;
         for (let index = lastActualIndex + 1; index < projected.length; index += 1) {
+          const dailyTrend = Number.isFinite(historicalTrends[index])
+            ? historicalTrends[index]
+            : Number.isFinite(currentWeekTrend)
+              ? currentWeekTrend
+              : 0;
           previousPrice = Math.max(0, previousPrice + dailyTrend);
           projected[index].displayPrice = previousPrice;
           projected[index].forecast = true;
@@ -1376,37 +1401,90 @@
         return Number.isFinite(median) ? median : null;
       }
 
-      async function loadWeeklyRows(baseDate) {
+      async function loadManagementSummaryForDate(date) {
+        const response = await fetch(urlForDate(date), { cache: "no-store" });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }
+
+      async function loadWeightedWeeklyTrends(weekStart, fuel) {
+        const transitionSamples = Array.from({ length: 7 }, () => []);
+        await Promise.all(
+          Array.from({ length: FORECAST_HISTORY_WEEKS }, async (_value, index) => {
+            const historicalWeekStart = addDays(weekStart, -7 * (index + 1));
+            const weight = Math.pow(FORECAST_RECENCY_DECAY, index);
+            const prices = await Promise.all(
+              Array.from({ length: 7 }, async (_dayValue, dayIndex) => {
+                try {
+                  const summary = await loadManagementSummaryForDate(
+                    addDays(historicalWeekStart, dayIndex),
+                  );
+                  return overallMedianForFuel(summary, fuel);
+                } catch {
+                  return null;
+                }
+              }),
+            );
+            for (let dayIndex = 1; dayIndex < prices.length; dayIndex += 1) {
+              if (
+                Number.isFinite(prices[dayIndex]) &&
+                Number.isFinite(prices[dayIndex - 1])
+              ) {
+                transitionSamples[dayIndex].push({
+                  value: prices[dayIndex] - prices[dayIndex - 1],
+                  weight,
+                });
+              }
+            }
+          }),
+        );
+        return transitionSamples.map((samples) => weightedAverage(samples));
+      }
+
+      async function loadWeeklyRows(baseDate, fuel = state.fuel) {
+        const rowsFuel = fuel;
+        const rowsDate = formatISODate(baseDate);
         const weekStart = startOfWeekMonday(baseDate);
         const dates = Array.from({ length: 7 }, (_value, index) =>
           addDays(weekStart, index),
         );
-        const rows = await Promise.all(
-          dates.map(async (date) => {
-            try {
-              const response = await fetch(urlForDate(date), {
-                cache: "no-store",
-              });
-              if (!response.ok) throw new Error(`HTTP ${response.status}`);
-              const summary = await response.json();
-              return {
-                date,
-                price: overallMedianForFuel(summary, state.fuel),
-              };
-            } catch {
-              return {
-                date,
-                price: null,
-              };
-            }
-          }),
-        );
+        const [rows, historicalTrends] = await Promise.all([
+          Promise.all(
+            dates.map(async (date) => {
+              try {
+                const summary = await loadManagementSummaryForDate(date);
+                return {
+                  date,
+                  price: overallMedianForFuel(summary, rowsFuel),
+                };
+              } catch {
+                return {
+                  date,
+                  price: null,
+                };
+              }
+            }),
+          ),
+          loadWeightedWeeklyTrends(weekStart, rowsFuel),
+        ]);
+        if (state.fuel !== rowsFuel || formatISODate(state.date) !== rowsDate) {
+          return;
+        }
         state.weeklyRows = rows;
+        state.weeklyForecastTrends = historicalTrends;
+        state.weeklyRowsFuel = rowsFuel;
+        state.weeklyRowsDate = rowsDate;
         drawWeeklyChart();
       }
 
       function drawWeeklyChart() {
-        const rows = forecastWeeklyRows(state.weeklyRows || []);
+        const hasMatchingRows =
+          state.weeklyRowsFuel === state.fuel &&
+          state.weeklyRowsDate === formatISODate(state.date);
+        const rows = forecastWeeklyRows(
+          hasMatchingRows ? state.weeklyRows || [] : [],
+          hasMatchingRows ? state.weeklyForecastTrends || [] : [],
+        );
         weeklyTitleEl.textContent = `Preisverlauf Montag bis Sonntag · ${fuelDisplayName(state.fuel)}`;
         resizeCanvas(weeklyCanvas, weeklyCtx);
         const w = weeklyCanvas.getBoundingClientRect().width;
@@ -1928,7 +2006,21 @@
           draw();
           drawBrandChart();
           drawHistogramChart();
+          state.weeklyRows = [];
+          state.weeklyForecastTrends = [];
+          state.weeklyRowsFuel = null;
+          state.weeklyRowsDate = null;
           drawWeeklyChart();
+          if (state.date) {
+            loadWeeklyRows(state.date, fuel).catch((weeklyError) => {
+              console.warn("Weekly chart failed", weeklyError);
+              state.weeklyRows = [];
+              state.weeklyForecastTrends = [];
+              state.weeklyRowsFuel = null;
+              state.weeklyRowsDate = null;
+              drawWeeklyChart();
+            });
+          }
           if (state.date) {
             loadChainComparison(state.date).catch((comparisonError) => {
               console.warn("Chain comparison failed", comparisonError);
@@ -2002,9 +2094,12 @@
           draw();
           drawBrandChart();
           drawHistogramChart();
-          loadWeeklyRows(d).catch((weeklyError) => {
+          loadWeeklyRows(d, state.fuel).catch((weeklyError) => {
             console.warn("Weekly chart failed", weeklyError);
             state.weeklyRows = [];
+            state.weeklyForecastTrends = [];
+            state.weeklyRowsFuel = null;
+            state.weeklyRowsDate = null;
             drawWeeklyChart();
           });
           loadChainComparison(d).catch((comparisonError) => {
@@ -2021,6 +2116,9 @@
           state.brandLayout = null;
           state.histogramLayout = null;
           state.weeklyRows = [];
+          state.weeklyForecastTrends = [];
+          state.weeklyRowsFuel = null;
+          state.weeklyRowsDate = null;
           state.weeklyLayout = null;
           state.chainComparison = null;
           weeklyCtx.clearRect(0, 0, weeklyCanvas.width, weeklyCanvas.height);

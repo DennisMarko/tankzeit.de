@@ -302,6 +302,8 @@
         { key: "free", label: "Freie / private", color: "#ea580c" },
       ];
       const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+      const FORECAST_HISTORY_WEEKS = 8;
+      const FORECAST_RECENCY_DECAY = 0.72;
 
       const statusEl = document.getElementById("status");
       const dataNoteEl = document.getElementById("data-note");
@@ -333,8 +335,14 @@
         noonCache: new Map(),
         latestDate: null,
         weeklyRows: [],
+        weeklyForecastTrends: null,
+        weeklyRowsFuel: null,
+        weeklyRowsDate: null,
         selectedStats: null,
         deltaRows: [],
+        deltaForecastValues: null,
+        deltaRowsFuel: null,
+        deltaRowsDate: null,
         histogramRows: [],
       };
 
@@ -501,6 +509,15 @@
         const finiteValues = values.filter((value) => Number.isFinite(value));
         if (!finiteValues.length) return null;
         return finiteValues.reduce((sum, value) => sum + value, 0) / finiteValues.length;
+      }
+
+      function weightedAverage(items) {
+        const validItems = items.filter(
+          (item) => Number.isFinite(item.value) && Number.isFinite(item.weight) && item.weight > 0,
+        );
+        if (!validItems.length) return null;
+        const weightSum = validItems.reduce((sum, item) => sum + item.weight, 0);
+        return validItems.reduce((sum, item) => sum + item.value * item.weight, 0) / weightSum;
       }
 
       function distribution(values) {
@@ -722,7 +739,9 @@
         ctx.restore();
       }
 
-      function forecastLineRows(rows, valueGetter, assignValue) {
+      function forecastLineRows(rows, valueGetter, assignValue, options = {}) {
+        const historicalTrends = options.historicalTrends || {};
+        const historicalValues = options.historicalValues || {};
         const projected = rows.map((row) => ({
           ...row,
           chain: row.chain && typeof row.chain === "object" ? { ...row.chain } : row.chain,
@@ -752,13 +771,25 @@
               );
             }
           }
-          const dailyTrend = deltas.length ? average(deltas) : 0;
+          const currentTrend = deltas.length ? average(deltas) : null;
           let previousValue = valueGetter(projected[lastActualIndex], group.key);
           for (
             let index = lastActualIndex + 1;
             index < projected.length;
             index += 1
           ) {
+            const directForecast = historicalValues[group.key]?.[index];
+            if (Number.isFinite(directForecast)) {
+              previousValue = directForecast;
+              assignValue(projected[index], group.key, previousValue);
+              projected[index].forecast[group.key] = true;
+              continue;
+            }
+            const dailyTrend = Number.isFinite(historicalTrends[group.key]?.[index])
+              ? historicalTrends[group.key][index]
+              : Number.isFinite(currentTrend)
+                ? currentTrend
+                : 0;
             previousValue += dailyTrend;
             assignValue(projected[index], group.key, previousValue);
             projected[index].forecast[group.key] = true;
@@ -960,6 +991,7 @@
               median: value,
             };
           },
+          { historicalTrends: state.weeklyForecastTrends },
         );
         const deltaRows = forecastLineRows(
           state.deltaRows,
@@ -967,6 +999,7 @@
           (row, key, value) => {
             row[key] = value;
           },
+          { historicalValues: state.deltaForecastValues },
         );
 
         drawLineChart(
@@ -990,7 +1023,7 @@
         drawHistogramChart();
       }
 
-      async function buildWeeklyRows(baseDate) {
+      async function buildWeeklyRows(baseDate, fuel = state.fuel) {
         const weekStart = startOfWeekMonday(baseDate);
         const dates = Array.from({ length: 7 }, (_value, index) => addDays(weekStart, index));
         return Promise.all(
@@ -1000,7 +1033,7 @@
               return {
                 date,
                 label: WEEKDAYS[index],
-                ...groupedPriceStats(rows, state.fuel),
+                ...groupedPriceStats(rows, fuel),
               };
             } catch {
               return { date, label: WEEKDAYS[index], chain: {}, free: {} };
@@ -1009,7 +1042,7 @@
         );
       }
 
-      async function buildDeltaRows(baseDate) {
+      async function buildDeltaRows(baseDate, fuel = state.fuel) {
         const weekStart = startOfWeekMonday(baseDate);
         const dates = Array.from({ length: 7 }, (_value, index) => addDays(weekStart, index));
         return Promise.all(
@@ -1019,8 +1052,8 @@
                 loadNoonRows(date),
                 loadNoonRows(addDays(date, -1)),
               ]);
-              const current = groupedPriceStats(currentRows, state.fuel);
-              const previous = groupedPriceStats(previousRows, state.fuel);
+              const current = groupedPriceStats(currentRows, fuel);
+              const previous = groupedPriceStats(previousRows, fuel);
               return {
                 date,
                 label: WEEKDAYS[index],
@@ -1042,20 +1075,91 @@
         );
       }
 
+      async function buildWeightedForecastInputs(baseDate, fuel) {
+        const weekStart = startOfWeekMonday(baseDate);
+        const transitionSamples = Object.fromEntries(
+          GROUPS.map((group) => [group.key, Array.from({ length: 7 }, () => [])]),
+        );
+        const deltaSamples = Object.fromEntries(
+          GROUPS.map((group) => [group.key, Array.from({ length: 7 }, () => [])]),
+        );
+
+        await Promise.all(
+          Array.from({ length: FORECAST_HISTORY_WEEKS }, async (_value, index) => {
+            const historicalWeekStart = addDays(weekStart, -7 * (index + 1));
+            const weight = Math.pow(FORECAST_RECENCY_DECAY, index);
+            const stats = await Promise.all(
+              Array.from({ length: 8 }, async (_dayValue, dayIndex) => {
+                try {
+                  const rows = await loadNoonRows(addDays(historicalWeekStart, dayIndex - 1));
+                  return groupedPriceStats(rows, fuel);
+                } catch {
+                  return null;
+                }
+              }),
+            );
+
+            for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+              GROUPS.forEach((group) => {
+                const previous = stats[dayIndex]?.[group.key]?.median;
+                const current = stats[dayIndex + 1]?.[group.key]?.median;
+                if (Number.isFinite(current) && Number.isFinite(previous)) {
+                  const change = current - previous;
+                  deltaSamples[group.key][dayIndex].push({ value: change, weight });
+                  if (dayIndex > 0) {
+                    transitionSamples[group.key][dayIndex].push({ value: change, weight });
+                  }
+                }
+              });
+            }
+          }),
+        );
+
+        return {
+          weeklyTrends: Object.fromEntries(
+            GROUPS.map((group) => [
+              group.key,
+              transitionSamples[group.key].map((samples) => weightedAverage(samples)),
+            ]),
+          ),
+          deltaValues: Object.fromEntries(
+            GROUPS.map((group) => [
+              group.key,
+              deltaSamples[group.key].map((samples) => weightedAverage(samples)),
+            ]),
+          ),
+        };
+      }
+
       async function loadForDate(date) {
+        const requestedFuel = state.fuel;
+        const requestedDate = formatISODate(date);
         state.date = date;
         datePicker.value = formatISODate(date);
         setStatus("Vergleichsdaten werden geladen...");
         try {
           const rows = await loadNoonRows(date);
-          const [weeklyRows, deltaRows] = await Promise.all([
-            buildWeeklyRows(date),
-            buildDeltaRows(date),
+          const [weeklyRows, deltaRows, forecastInputs] = await Promise.all([
+            buildWeeklyRows(date, requestedFuel),
+            buildDeltaRows(date, requestedFuel),
+            buildWeightedForecastInputs(date, requestedFuel),
           ]);
-          state.selectedStats = groupedPriceStats(rows, state.fuel);
-          state.histogramRows = groupedReferenceBuckets(rows, state.fuel);
+          if (
+            state.fuel !== requestedFuel ||
+            formatISODate(state.date) !== requestedDate
+          ) {
+            return;
+          }
+          state.selectedStats = groupedPriceStats(rows, requestedFuel);
+          state.histogramRows = groupedReferenceBuckets(rows, requestedFuel);
           state.weeklyRows = weeklyRows;
+          state.weeklyForecastTrends = forecastInputs.weeklyTrends;
+          state.weeklyRowsFuel = requestedFuel;
+          state.weeklyRowsDate = requestedDate;
           state.deltaRows = deltaRows;
+          state.deltaForecastValues = forecastInputs.deltaValues;
+          state.deltaRowsFuel = requestedFuel;
+          state.deltaRowsDate = requestedDate;
           drawAllCharts();
           clearStatus();
         } catch (err) {
